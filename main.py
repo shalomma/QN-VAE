@@ -10,7 +10,7 @@ from trainer import Trainer
 
 if __name__ == '__main__':
     batch_size = 256
-    num_training_updates = 300
+    epochs = 10
     num_hidden = 128
     num_residual_hidden = 32
     num_residual_layers = 2
@@ -22,12 +22,13 @@ if __name__ == '__main__':
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
 
     qn_model = dict()
     optimizer = dict()
     for q in quant_noise_probs:
         qn_model[q] = VQ_VAE(num_hidden, num_residual_layers, num_residual_hidden,
-                             num_embeddings, embedding_dim, commitment_cost)
+                             num_embeddings, embedding_dim, commitment_cost).to(device)
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
     data = dict()
@@ -50,4 +51,5 @@ if __name__ == '__main__':
     for q in quant_noise_probs:
         trainer = Trainer(qn_model[q], optimizer[q], loader)
         trainer.data_variance = data_variance
-        trainer.train()
+        trainer.epochs = epochs
+        trainer.run()
