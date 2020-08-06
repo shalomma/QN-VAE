@@ -10,7 +10,7 @@ from trainer import Trainer
 
 if __name__ == '__main__':
     batch_size = 256
-    epochs = 10
+    epochs = 1000
     num_hidden = 128
     num_residual_hidden = 32
     num_residual_layers = 2
