@@ -1,4 +1,3 @@
-import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from torch.optim import Adam
@@ -9,8 +8,8 @@ from trainer import Trainer
 
 
 if __name__ == '__main__':
-    batch_size = 256
-    epochs = 1000
+    batch_size = 1024
+    epochs = 40
     num_hidden = 128
     num_residual_hidden = 32
     num_residual_layers = 2
@@ -37,8 +36,6 @@ if __name__ == '__main__':
                                          transforms.ToTensor(),
                                          transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))
                                      ]))
-    data_variance = np.var(data['train'].data / 255.0)
-
     data['val'] = datasets.CIFAR10(root="data", train=False, download=True,
                                    transform=transforms.Compose([
                                        transforms.ToTensor(),
@@ -49,7 +46,7 @@ if __name__ == '__main__':
     loader['val'] = DataLoader(data['val'], batch_size=32, shuffle=True, pin_memory=True)
 
     for q in quant_noise_probs:
+        print(f'Train q={q}')
         trainer = Trainer(qn_model[q], optimizer[q], loader)
-        trainer.data_variance = data_variance
         trainer.epochs = epochs
         trainer.run()

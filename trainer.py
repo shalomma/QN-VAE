@@ -9,7 +9,6 @@ class Trainer:
         self.optimizer = optimizer
         self.loader = loader
         self.epochs = 50
-        self.data_variance = None
         self.phases = ['train']
         self.train_recon_error = []
         # self.train_perplexity = []
@@ -27,7 +26,7 @@ class Trainer:
                     samples = samples.to(self.device)
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
-                    recon_error = F.mse_loss(data_recon, samples, reduction='sum') / self.data_variance
+                    recon_error = F.mse_loss(data_recon, samples, reduction='sum')
                     loss = recon_error + vq_loss
                     if phase == 'train':
                         loss.backward()
