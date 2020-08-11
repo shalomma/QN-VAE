@@ -27,7 +27,7 @@ class Trainer:
                     samples = samples.to(self.device)
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
-                    recon_error = F.mse_loss(data_recon, samples, reduction='sum')
+                    recon_error = F.mse_loss(data_recon, samples, reduction='sum') / 0.06329
                     loss = recon_error
                     if isinstance(self.model, VQ_VAE):
                         loss += vq_loss
