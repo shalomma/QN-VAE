@@ -10,7 +10,7 @@ class Trainer:
         self.optimizer = optimizer
         self.loader = loader
         self.epochs = 50
-        self.phases = ['train']
+        self.phases = ['train', 'val']
         self.train_recon_error = []
         # self.train_perplexity = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
