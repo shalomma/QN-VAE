@@ -3,31 +3,34 @@ import torch
 from torch.optim import Adam
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from vq_vae import VQ_VAE
+from vq_vae import VQ_VAE, AE
 from trainer import Trainer
 
 
 if __name__ == '__main__':
     batch_size = 1024
-    epochs = 40
+    epochs = 60
     num_hidden = 128
     num_residual_hidden = 32
     num_residual_layers = 2
     embedding_dim = 64
     num_embeddings = 512
     commitment_cost = 0.25
-    learning_rate = 1e-3
+    learning_rate = 1e-4
 
-    quant_noise_probs = [0.25, 0.5, 0.75, 1]
+    quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
     qn_model = dict()
     optimizer = dict()
-    for q in quant_noise_probs:
+    qn_model[0] = AE(num_hidden, num_residual_layers,
+                     num_residual_hidden, embedding_dim).to(device)
+    for q in quant_noise_probs[1:]:
         qn_model[q] = VQ_VAE(num_hidden, num_residual_layers, num_residual_hidden,
                              num_embeddings, embedding_dim, commitment_cost).to(device)
+    for q in quant_noise_probs:
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
     data = dict()
