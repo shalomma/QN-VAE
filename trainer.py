@@ -35,10 +35,11 @@ class Trainer:
 
                     epoch_recon_error += recon_error.item()
                     # epoch_perplexity += perplexity.item()
+                    break
 
                 self.train_recon_error.append(epoch_recon_error / np.prod(self.loader[phase].dataset.data.shape))
                 # self.train_perplexity.append(epoch_perplexity)
                 to_print += f'{phase}: '
-                to_print += f'recon error: {self.train_recon_error[-1:]:.4f}  '
+                to_print += f'recon error: {self.train_recon_error[-1]:.4f}  '
                 # to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
             print(to_print)
