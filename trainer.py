@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from vq_vae import VQ_VAE
 
 
 class Trainer:
@@ -27,7 +28,9 @@ class Trainer:
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
                     recon_error = F.mse_loss(data_recon, samples, reduction='sum')
-                    loss = recon_error + vq_loss
+                    loss = recon_error
+                    if isinstance(self.model, VQ_VAE):
+                        loss += vq_loss
                     if phase == 'train':
                         loss.backward()
                         self.optimizer.step()
