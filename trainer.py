@@ -9,6 +9,7 @@ class Trainer:
         self.model = model
         self.optimizer = optimizer
         self.loader = loader
+        self.data_variance = np.var(loader['train'].dataset.data / 255.0)
         self.epochs = 50
         self.phases = ['train', 'val']
         self.train_recon_error = []
@@ -26,7 +27,7 @@ class Trainer:
                     samples = samples.to(self.device)
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
-                    recon_error = F.mse_loss(data_recon, samples, reduction='sum') / 0.06329
+                    recon_error = F.mse_loss(data_recon, samples, reduction='sum') / self.data_variance
                     loss = recon_error
                     if isinstance(self.model, VQ_VAE):
                         loss += vq_loss
