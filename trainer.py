@@ -36,7 +36,6 @@ class Trainer:
 
                     epoch_recon_error += recon_error.item()
                     epoch_perplexity += perplexity.item()
-                    break
 
                 n_elements = np.prod(self.loader[phase].dataset.data.shape)
                 self.train_recon_error.append(epoch_recon_error / n_elements)
