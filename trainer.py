@@ -12,7 +12,7 @@ class Trainer:
         self.epochs = 50
         self.phases = ['train', 'val']
         self.train_recon_error = []
-        # self.train_perplexity = []
+        self.train_perplexity = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
@@ -21,9 +21,8 @@ class Trainer:
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
                 epoch_recon_error = 0
-                # epoch_perplexity = 0
+                epoch_perplexity = 0
                 for k, (samples, _) in enumerate(self.loader[phase]):
-                    # (samples, _) = next(iter(self.loader[phase]))
                     samples = samples.to(self.device)
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
@@ -36,12 +35,14 @@ class Trainer:
                         self.optimizer.step()
 
                     epoch_recon_error += recon_error.item()
-                    # epoch_perplexity += perplexity.item()
+                    epoch_perplexity += perplexity.item()
                     break
 
-                self.train_recon_error.append(epoch_recon_error / np.prod(self.loader[phase].dataset.data.shape))
-                # self.train_perplexity.append(epoch_perplexity)
+                n_elements = np.prod(self.loader[phase].dataset.data.shape)
+                self.train_recon_error.append(epoch_recon_error / n_elements)
+                self.train_perplexity.append(epoch_perplexity / n_elements)
                 to_print += f'{phase}: '
                 to_print += f'recon error: {self.train_recon_error[-1]:.4f}  '
-                # to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
+                if isinstance(self.model, VQ_VAE):
+                    to_print += f'perplexity: {np.mean(self.train_perplexity[-1]):.4f} '
             print(to_print)
