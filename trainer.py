@@ -27,7 +27,8 @@ class Trainer:
                     samples = samples.to(self.device)
                     self.optimizer.zero_grad()
                     vq_loss, data_recon, perplexity = self.model(samples)
-                    recon_error = F.mse_loss(data_recon, samples, reduction='sum') / self.data_variance
+                    recon_error = F.mse_loss(data_recon, samples) / self.data_variance
+                    epoch_recon_error += recon_error.item() * np.prod(samples.shape)
                     loss = recon_error
                     if isinstance(self.model, VQ_VAE):
                         loss += vq_loss
@@ -35,13 +36,12 @@ class Trainer:
                     if phase == 'train':
                         loss.backward()
                         self.optimizer.step()
-                    epoch_recon_error += recon_error.item()
 
                 n_elements = np.prod(self.loader[phase].dataset.data.shape)
                 self.train_recon_error.append(epoch_recon_error / n_elements)
                 to_print += f'{phase}: '
                 to_print += f'recon error: {self.train_recon_error[-1]:.4f}  '
                 if isinstance(self.model, VQ_VAE):
-                    self.train_perplexity.append(epoch_perplexity / n_elements)
+                    self.train_perplexity.append(epoch_perplexity / len(self.loader[phase].dataset))
                     to_print += f'perplexity: {np.mean(self.train_perplexity[-1]):.4f} '
             print(to_print)
