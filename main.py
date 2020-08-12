@@ -34,19 +34,12 @@ if __name__ == '__main__':
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
     data = dict()
-    data['train'] = datasets.CIFAR10(root="data", train=True, download=True,
-                                     transform=transforms.Compose([
-                                         transforms.ToTensor(),
-                                         transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))
-                                     ]))
-    data['val'] = datasets.CIFAR10(root="data", train=False, download=True,
-                                   transform=transforms.Compose([
-                                       transforms.ToTensor(),
-                                       transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))
-                                       ]))
+    compose = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))])
+    data['train'] = datasets.CIFAR10(root="data", train=True, download=True, transform=compose)
+    data['val'] = datasets.CIFAR10(root="data", train=False, download=True, transform=compose)
     loader = dict()
     loader['train'] = DataLoader(data['train'], batch_size=batch_size, shuffle=True, pin_memory=True)
-    loader['val'] = DataLoader(data['val'], batch_size=32, shuffle=True, pin_memory=True)
+    loader['val'] = DataLoader(data['val'], batch_size=batch_size, shuffle=True, pin_memory=True)
 
     for q in quant_noise_probs:
         print(f'Train q={q}')
