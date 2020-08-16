@@ -70,7 +70,7 @@ class Plotter:
         proj = dict()
         for q, model in self.models.items():
             proj[q] = umap.UMAP(n_neighbors=3, min_dist=0.1,
-                                metric='cosine').fit_transform(model._vq_vae._embedding.weight.data.cpu())
+                                metric='cosine').fit_transform(model.vq_vae.embedding.weight.data.cpu())
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
         fig.suptitle('UMAP projection of embedding (codebook)')
         axs[0, 0].scatter(proj[0.25][:, 0], proj[0.25][:, 1], alpha=0.3)

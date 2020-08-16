@@ -10,8 +10,8 @@ class VectorQuantizer(nn.Module):
         self._embedding_dim = embedding_dim
         self._num_embeddings = num_embeddings
 
-        self._embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
-        self._embedding.weight.data.uniform_(-1 / self._num_embeddings, 1 / self._num_embeddings)
+        self.embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
+        self.embedding.weight.data.uniform_(-1 / self._num_embeddings, 1 / self._num_embeddings)
         self._commitment_cost = commitment_cost
 
         self.quant_noise = quant_noise
@@ -29,8 +29,8 @@ class VectorQuantizer(nn.Module):
 
         # Calculate distances
         distances = (torch.sum(flat_input[mask] ** 2, dim=1, keepdim=True)
-                     + torch.sum(self._embedding.weight ** 2, dim=1)
-                     - 2 * torch.matmul(flat_input[mask], self._embedding.weight.t()))
+                     + torch.sum(self.embedding.weight ** 2, dim=1)
+                     - 2 * torch.matmul(flat_input[mask], self.embedding.weight.t()))
 
         # Encoding
         encoding_indices = torch.argmin(distances, dim=1).unsqueeze(1)
@@ -39,7 +39,7 @@ class VectorQuantizer(nn.Module):
 
         # Quantize and un flatten
         quantized = torch.zeros(flat_input.shape, device=inputs.device)
-        quantized[mask] = torch.matmul(encodings, self._embedding.weight)
+        quantized[mask] = torch.matmul(encodings, self.embedding.weight)
         quantized[~mask] = flat_input[~mask]
         quantized = quantized.view(input_shape)
 
@@ -167,8 +167,8 @@ class VQ_VAE(nn.Module):
                                       kernel_size=1,
                                       stride=1)
 
-        self._vq_vae = VectorQuantizer(num_embeddings, embedding_dim,
-                                       commitment_cost, quant_noise)
+        self.vq_vae = VectorQuantizer(num_embeddings, embedding_dim,
+                                      commitment_cost, quant_noise)
         self._decoder = Decoder(embedding_dim,
                                 num_hidden,
                                 num_residual_layers,
@@ -177,7 +177,7 @@ class VQ_VAE(nn.Module):
     def forward(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
-        loss, quantized, perplexity, _ = self._vq_vae(z)
+        loss, quantized, perplexity, _ = self.vq_vae(z)
         x_recon = self._decoder(quantized)
 
         return loss, x_recon, perplexity
