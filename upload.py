@@ -18,6 +18,7 @@ class Upload:
         quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
         for q in quant_noise_probs:
             self.file(f'model_{q}.pt')
+            self.file(f'model_{q}.pkl')
 
 
 if __name__ == '__main__':

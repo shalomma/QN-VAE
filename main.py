@@ -40,5 +40,5 @@ if __name__ == '__main__':
         trainer.epochs = epochs
         trainer.run()
         torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
-        with open(f'model_{q}.pt', 'wb') as f:
+        with open(f'model_{q}.pkl', 'wb') as f:
             pickle.dump(qn_model[q], f)
