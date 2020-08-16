@@ -6,4 +6,5 @@ venv/
 *.pkl
 *.json
 *.sh
+*.png
 temp
