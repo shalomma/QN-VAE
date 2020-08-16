@@ -8,11 +8,11 @@ class Upload:
     gauth.CommandLineAuth()
     drive = GoogleDrive(gauth)
 
-    def file(self, file):
-        file = self.drive.CreateFile({f'title': file})
-        file.SetContentFile(file)
-        file.Upload()  # Upload the file.
-        print('title: %s, id: %s' % (file['title'], file['id']))
+    def file(self, name):
+        file_ = self.drive.CreateFile({f'title': name})
+        file_.SetContentFile(name)
+        file_.Upload()  # Upload the file.
+        print('title: %s, id: %s' % (file_['title'], file_['id']))
 
     def models(self):
         quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
