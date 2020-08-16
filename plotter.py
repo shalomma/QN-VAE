@@ -1,6 +1,6 @@
 import torch
-import umap
 import pickle
+import umap
 import numpy as np
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
@@ -16,7 +16,7 @@ class Plotter:
         self.sample_images()
 
     def sample_images(self):
-        for loader, phase in self.loaders.items():
+        for phase, loader in self.loaders.items():
             (samples, _) = next(iter(loader))
             self.images[phase] = samples.to(self.device)
 
@@ -42,8 +42,8 @@ class Plotter:
     def recon_val(self):
         images = dict()
         for q, model in self.models.items():
-            model[q].eval()
-            _, valid_reconstructions, _ = model[q](self.images['val'])
+            model.eval()
+            _, valid_reconstructions, _ = model(self.images['val'])
             images[q] = self.prepare_images(valid_reconstructions)
         fig, axs = plt.subplots(2, 3, figsize=(10, 10))
         fig.suptitle('Validation Reconstruction')
@@ -90,11 +90,11 @@ if __name__ == '__main__':
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
     qn_model = dict()
     for q_ in quant_noise_probs:
-        with open(f'model_{q_}.pt', 'rb') as f:
-            qn_model[q_] = pickle.load(f)
+        with open(f'model_{q_}.pkl', 'rb') as f:
+            qn_model[q_] = pickle.load(f).cpu()
 
     loaders_ = CIFAR10Loader().get(64)
     plotter = Plotter(qn_model, loaders_)
     plotter.recon_train()
     plotter.recon_val()
-    plotter.embedding()
+    # plotter.embedding()
