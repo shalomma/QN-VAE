@@ -1,8 +1,6 @@
-from torch.utils.data import DataLoader
 import torch
 from torch.optim import Adam
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
+from loader import CIFAR10Loader
 from vq_vae import VQ_VAE, AE
 from trainer import Trainer
 
@@ -33,17 +31,11 @@ if __name__ == '__main__':
     for q in quant_noise_probs:
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
-    data = dict()
-    compose = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))])
-    data['train'] = datasets.CIFAR10(root="data", train=True, download=True, transform=compose)
-    data['val'] = datasets.CIFAR10(root="data", train=False, download=True, transform=compose)
-    loader = dict()
-    loader['train'] = DataLoader(data['train'], batch_size=batch_size, shuffle=True, pin_memory=True)
-    loader['val'] = DataLoader(data['val'], batch_size=batch_size, shuffle=True, pin_memory=True)
+    loaders = CIFAR10Loader().get(batch_size)
 
     for q in quant_noise_probs:
         print(f'Train q={q}')
-        trainer = Trainer(qn_model[q], optimizer[q], loader)
+        trainer = Trainer(qn_model[q], optimizer[q], loaders)
         trainer.epochs = epochs
         trainer.run()
         torch.save(qn_model[q].state_dict(), f'model_{q}.pt')

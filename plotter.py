@@ -1,8 +1,10 @@
 import torch
 import umap
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
+from loader import CIFAR10Loader
 
 
 class Plotter:
@@ -11,6 +13,7 @@ class Plotter:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.loaders = loaders
         self.images = dict()
+        self.sample_images()
 
     def sample_images(self):
         for loader, phase in self.loaders.items():
@@ -81,3 +84,17 @@ class Plotter:
         for ax in axs.flat:
             ax.label_outer()
         plt.savefig(f'emb.png')
+
+
+if __name__ == '__main__':
+    quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
+    qn_model = dict()
+    for q_ in quant_noise_probs:
+        with open(f'model_{q_}.pt', 'rb') as f:
+            qn_model[q_] = pickle.load(f)
+
+    loaders_ = CIFAR10Loader().get(64)
+    plotter = Plotter(qn_model, loaders_)
+    plotter.recon_train()
+    plotter.recon_val()
+    plotter.embedding()
