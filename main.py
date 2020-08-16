@@ -1,3 +1,4 @@
+import pickle
 import torch
 from torch.optim import Adam
 from loader import CIFAR10Loader
@@ -6,7 +7,7 @@ from trainer import Trainer
 
 
 if __name__ == '__main__':
-    batch_size = 1024
+    batch_size = 128
     epochs = 2000
     num_hidden = 128
     num_residual_hidden = 32
@@ -39,3 +40,5 @@ if __name__ == '__main__':
         trainer.epochs = epochs
         trainer.run()
         torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
+        with open(f'model_{q}.pt', 'wb') as f:
+            pickle.dump(qn_model[q], f)
