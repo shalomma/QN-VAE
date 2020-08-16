@@ -25,11 +25,11 @@ if __name__ == '__main__':
 
     qn_model = dict()
     optimizer = dict()
-    qn_model[0] = AE(num_hidden, num_residual_layers,
-                     num_residual_hidden, embedding_dim).to(device)
-    for q in quant_noise_probs[1:]:
+    for q in quant_noise_probs:
         qn_model[q] = VQ_VAE(num_hidden, num_residual_layers, num_residual_hidden,
                              num_embeddings, embedding_dim, commitment_cost).to(device)
+    qn_model[0] = AE(num_hidden, num_residual_layers,
+                     num_residual_hidden, embedding_dim).to(device)
     for q in quant_noise_probs:
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
@@ -46,3 +46,4 @@ if __name__ == '__main__':
         trainer = Trainer(qn_model[q], optimizer[q], loader)
         trainer.epochs = epochs
         trainer.run()
+        torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
