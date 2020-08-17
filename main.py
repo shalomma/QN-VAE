@@ -1,7 +1,7 @@
 import pickle
 import torch
 from torch.optim import Adam
-from loader import CIFAR10Loader
+import loader
 from vq_vae import VQ_VAE, AE
 from trainer import Trainer
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     for q in quant_noise_probs:
         optimizer[q] = Adam(qn_model[q].parameters(), lr=learning_rate, amsgrad=False)
 
-    loaders = CIFAR10Loader().get(batch_size)
+    loaders = loader.CIFAR10Loader().get(batch_size)
 
     for q in quant_noise_probs:
         print(f'Train q={q}')
