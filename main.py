@@ -1,8 +1,11 @@
+import os
 import logging.config
 import torch
 from torch.optim import Adam
-import loader
+from datetime import datetime
+from git import Repo
 
+import loader
 from qn_vae import QNVAE, AE
 from trainer import Trainer
 from utils import save_model
@@ -13,7 +16,13 @@ torch.manual_seed(seed)
 
 
 if __name__ == '__main__':
-    logging.config.fileConfig('logging.ini', defaults={'logfile': 'training.log'},
+    if not os.path.exists('models'):
+        os.makedirs('models')
+    timestamp = str(datetime.now())[:-7]
+    timestamp = timestamp.replace('-', '_').replace(' ', '_').replace(':', '_')
+    os.makedirs(f'models/{timestamp}')
+
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{timestamp}/training.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
     
@@ -38,7 +47,7 @@ if __name__ == '__main__':
     optimizer = dict()
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
-                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost']).to(device)
+                            params['num_embeddings'], params['embedding_dim'], params['commitment_cost']).to(device)
     qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
                      params['num_residual_hidden'], params['embedding_dim']).to(device)
     for q in quant_noise_probs:
@@ -51,4 +60,6 @@ if __name__ == '__main__':
         trainer = Trainer(qn_model[q], optimizer[q], loaders)
         trainer.batches = params['batches']
         trainer.run()
-        save_model(qn_model[q], params, q)
+        params['commit'] = Repo('./').head.commit.hexsha[:7]
+        params['loss'] = trainer.train_recon_error
+        save_model(qn_model[q], params, q, f'models/{timestamp}')
