@@ -4,8 +4,6 @@ import torch
 import torch.nn.functional as F
 from torch.backends import cudnn
 
-from qnvae import QNVAE
-
 
 cudnn.deterministic = True
 cudnn.benchmark = False
@@ -33,11 +31,11 @@ class Trainer:
                 samples, _ = next(iter(self.loader[phase]))
                 samples = samples.to(self.device)
                 self.optimizer.zero_grad()
-                vq_loss, data_recon, perplexity = self.model(samples)
+                vq_loss, data_recon, perplexity, encoding = self.model(samples)
                 recon_error = F.mse_loss(data_recon, samples) / self.data_variance
                 self.train_recon_error.append(recon_error.item())
                 loss = recon_error
-                if isinstance(self.model, QNVAE):
+                if vq_loss is not None:
                     loss += vq_loss
                 if phase == 'train':
                     loss.backward()
@@ -45,7 +43,7 @@ class Trainer:
 
                 to_print += f'{phase}: '
                 to_print += f'recon error: {np.mean(self.train_recon_error[-100:]):.4f}  '
-                if isinstance(self.model, QNVAE):
+                if perplexity is not None:
                     self.train_perplexity.append(perplexity.item())
                     to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
             if i % 100 == 0:

@@ -57,7 +57,7 @@ class VectorQuantizer(nn.Module, ABC):
         perplexity = torch.exp(-torch.sum(avg_prob * torch.log(avg_prob + 1e-10)))
 
         # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encodings
+        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view(input_shape[:3])
 
 
 class Residual(nn.Module, ABC):
@@ -163,7 +163,6 @@ class QNVAE(nn.Module, ABC):
                                       out_channels=embedding_dim,
                                       kernel_size=1,
                                       stride=1)
-
         self.vq_vae = VectorQuantizer(num_embeddings, embedding_dim,
                                       commitment_cost, quant_noise)
         self._decoder = Decoder(embedding_dim,
@@ -174,9 +173,9 @@ class QNVAE(nn.Module, ABC):
     def forward(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
-        loss, quantized, perplexity, _ = self.vq_vae(z)
+        loss, quantized, perplexity, encoding = self.vq_vae(z)
         x_recon = self._decoder(quantized)
-        return loss, x_recon, perplexity
+        return loss, x_recon, perplexity, encoding
 
 
 class AE(nn.Module, ABC):
@@ -200,7 +199,7 @@ class AE(nn.Module, ABC):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
         x_recon = self._decoder(z)
-        return None, x_recon, None
+        return None, x_recon, None, None
 
 
 if __name__ == '__main__':
