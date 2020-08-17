@@ -5,6 +5,9 @@ import loader
 from vq_vae import VQ_VAE, AE
 from trainer import Trainer
 
+seed = 14
+torch.manual_seed(seed)
+
 
 if __name__ == '__main__':
     batch_size = 128

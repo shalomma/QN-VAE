@@ -1,10 +1,14 @@
+from torch import manual_seed
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 
 class Loader:
+    seed = 14
+
     def __init__(self):
+        manual_seed(self.seed)
         self.data = dict()
         self.compose = transforms.Compose([transforms.ToTensor(),
                                            transforms.Normalize((0.5, 0.5, 0.5), (1.0, 1.0, 1.0))])

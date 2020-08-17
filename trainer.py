@@ -2,6 +2,12 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from vq_vae import VQ_VAE
+from torch.backends import cudnn
+
+
+cudnn.deterministic = True
+cudnn.benchmark = True
+cudnn.fastest = True
 
 
 class Trainer:
