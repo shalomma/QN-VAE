@@ -45,3 +45,5 @@ if __name__ == '__main__':
         torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
         with open(f'model_{q}.pkl', 'wb') as f:
             pickle.dump(qn_model[q], f)
+        with open(f'model_{q}_cpu.pkl', 'wb') as f:
+            pickle.dump(qn_model[q].cpu(), f)
