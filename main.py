@@ -1,9 +1,10 @@
-import pickle
 import torch
 from torch.optim import Adam
 import loader
 from qn_vae import QNVAE, AE
 from trainer import Trainer
+from utils import save_model
+
 
 seed = 14
 torch.manual_seed(seed)
@@ -44,8 +45,4 @@ if __name__ == '__main__':
         trainer = Trainer(qn_model[q], optimizer[q], loaders)
         trainer.batches = params['batches']
         trainer.run()
-        torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
-        with open(f'model_{q}.pkl', 'wb') as f:
-            pickle.dump(qn_model[q], f)
-        with open(f'model_{q}_cpu.pkl', 'wb') as f:
-            pickle.dump(qn_model[q].cpu(), f)
+        save_model(qn_model[q], params, q)
