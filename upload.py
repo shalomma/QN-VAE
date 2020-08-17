@@ -11,14 +11,13 @@ class Upload:
     def file(self, name):
         file_ = self.drive.CreateFile({f'title': name})
         file_.SetContentFile(name)
-        file_.Upload()  # Upload the file.
+        file_.Upload()
         print('title: %s, id: %s' % (file_['title'], file_['id']))
 
     def models(self):
         quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
         for q in quant_noise_probs:
-            self.file(f'model_{q}.pt')
-            self.file(f'model_{q}.pkl')
+            self.file(f'model_{q}_cpu.pkl')
 
 
 if __name__ == '__main__':
