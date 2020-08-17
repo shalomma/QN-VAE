@@ -30,9 +30,9 @@ class Plotter:
         _, train_reconstructions, _ = self.models[1](self.images['train'])
         fig, axs = plt.subplots(1, 2, figsize=(10, 10))
         fig.suptitle('Training Reconstruction')
-        axs[0].imshow(self.prepare_images(self.images['train'][:64]), interpolation='nearest')
+        axs[0].imshow(self.prepare_images(self.images['train']), interpolation='nearest')
         axs[0].set_title('Input')
-        axs[1].imshow(self.prepare_images(train_reconstructions[:64]), interpolation='nearest')
+        axs[1].imshow(self.prepare_images(train_reconstructions), interpolation='nearest')
         axs[1].set_title('Reconstruction')
 
         plt.tight_layout()
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
     qn_model = dict()
     for q_ in quant_noise_probs:
-        with open(f'model_{q_}.pkl', 'rb') as f:
+        with open(f'model_{q_}_cpu.pkl', 'rb') as f:
             qn_model[q_] = pickle.load(f).cpu()
 
     loaders_ = CIFAR10Loader().get(64)
