@@ -153,7 +153,7 @@ class Decoder(nn.Module):
 class QNVAE(nn.Module):
     def __init__(self, num_hidden, num_residual_layers, num_residual_hidden,
                  num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
-        super(VQ_VAE, self).__init__()
+        super(QNVAE, self).__init__()
         torch.manual_seed(seed)
         self._encoder = Encoder(3, num_hidden,
                                 num_residual_layers,
