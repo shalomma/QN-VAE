@@ -1,3 +1,4 @@
+from abc import ABC
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,7 +7,7 @@ import torch.nn.functional as F
 seed = 14
 
 
-class VectorQuantizer(nn.Module):
+class VectorQuantizer(nn.Module, ABC):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(VectorQuantizer, self).__init__()
         torch.manual_seed(seed)
@@ -59,7 +60,7 @@ class VectorQuantizer(nn.Module):
         return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encodings
 
 
-class Residual(nn.Module):
+class Residual(nn.Module, ABC):
     def __init__(self, in_channels, num_hidden, num_residual_hidden):
         super(Residual, self).__init__()
         torch.manual_seed(seed)
@@ -78,7 +79,7 @@ class Residual(nn.Module):
         return x + self._block(x)
 
 
-class ResidualStack(nn.Module):
+class ResidualStack(nn.Module, ABC):
     def __init__(self, in_channels, num_hidden, num_residual_layers, num_residual_hidden):
         super(ResidualStack, self).__init__()
         self._num_residual_layers = num_residual_layers
@@ -91,7 +92,7 @@ class ResidualStack(nn.Module):
         return F.relu(x)
 
 
-class Encoder(nn.Module):
+class Encoder(nn.Module, ABC):
     def __init__(self, in_channels, num_hidden, num_residual_layers, num_residual_hidden):
         super(Encoder, self).__init__()
         torch.manual_seed(seed)
@@ -121,7 +122,7 @@ class Encoder(nn.Module):
         return self._residual_stack(x)
 
 
-class Decoder(nn.Module):
+class Decoder(nn.Module, ABC):
     def __init__(self, in_channels, num_hidden, num_residual_layers, num_residual_hidden):
         super(Decoder, self).__init__()
         torch.manual_seed(seed)
@@ -150,7 +151,7 @@ class Decoder(nn.Module):
         return self._conv_trans_2(x)
 
 
-class QNVAE(nn.Module):
+class QNVAE(nn.Module, ABC):
     def __init__(self, num_hidden, num_residual_layers, num_residual_hidden,
                  num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(QNVAE, self).__init__()
@@ -178,7 +179,7 @@ class QNVAE(nn.Module):
         return loss, x_recon, perplexity
 
 
-class AE(nn.Module):
+class AE(nn.Module, ABC):
     def __init__(self, num_hidden, num_residual_layers, num_residual_hidden,
                  embedding_dim):
         super(AE, self).__init__()
