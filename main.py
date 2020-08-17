@@ -12,7 +12,7 @@ torch.manual_seed(seed)
 if __name__ == '__main__':
     params = {
         'batch_size': 128,
-        'epochs': 2000,
+        'batches': 2000,
         'num_hidden': 128,
         'num_residual_hidden': 32,
         'num_residual_layers': 2,
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     for q in quant_noise_probs:
         print(f'Train q={q}')
         trainer = Trainer(qn_model[q], optimizer[q], loaders)
-        trainer.epochs = params['epochs']
+        trainer.batches = params['batches']
         trainer.run()
         torch.save(qn_model[q].state_dict(), f'model_{q}.pt')
         with open(f'model_{q}.pkl', 'wb') as f:

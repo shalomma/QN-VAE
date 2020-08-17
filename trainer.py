@@ -16,14 +16,14 @@ class Trainer:
         self.optimizer = optimizer
         self.loader = loader
         self.data_variance = np.var(loader['train'].dataset.data / 255.0)
-        self.epochs = 50
+        self.batches = 50
         self.phases = ['train', 'val']
         self.train_recon_error = []
         self.train_perplexity = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
-        for i in range(self.epochs):
+        for i in range(self.batches):
             to_print = f'Batch {i:04}: '
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
