@@ -7,4 +7,5 @@ venv/
 *.json
 *.sh
 *.png
+*.log
 temp

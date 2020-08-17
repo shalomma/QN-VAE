@@ -1,6 +1,8 @@
+import logging.config
 import torch
 from torch.optim import Adam
 import loader
+
 from qn_vae import QNVAE, AE
 from trainer import Trainer
 from utils import save_model
@@ -11,8 +13,12 @@ torch.manual_seed(seed)
 
 
 if __name__ == '__main__':
+    logging.config.fileConfig('logging.ini', defaults={'logfile': 'training.log'},
+                              disable_existing_loggers=False)
+    log = logging.getLogger(__name__)
+    
     params = {
-        'batch_size': 128,
+        'batch_size': 1024,
         'batches': 2000,
         'num_hidden': 128,
         'num_residual_hidden': 32,
@@ -26,7 +32,7 @@ if __name__ == '__main__':
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
+    log.info(device)
 
     qn_model = dict()
     optimizer = dict()
@@ -41,7 +47,7 @@ if __name__ == '__main__':
     loaders = loader.CIFAR10Loader().get(params['batch_size'])
 
     for q in quant_noise_probs:
-        print(f'Train q={q}')
+        log.info(f'Train q={q}')
         trainer = Trainer(qn_model[q], optimizer[q], loaders)
         trainer.batches = params['batches']
         trainer.run()

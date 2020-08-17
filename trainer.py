@@ -1,8 +1,10 @@
+import logging
 import numpy as np
 import torch
 import torch.nn.functional as F
-from qn_vae import QNVAE
 from torch.backends import cudnn
+
+from qn_vae import QNVAE
 
 
 cudnn.deterministic = True
@@ -21,6 +23,7 @@ class Trainer:
         self.train_recon_error = []
         self.train_perplexity = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.log = logging.getLogger(__name__).info
 
     def run(self):
         for i in range(self.batches):
@@ -46,4 +49,4 @@ class Trainer:
                     self.train_perplexity.append(perplexity.item())
                     to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
             if i % 100 == 0:
-                print(to_print)
+                self.log(to_print)
