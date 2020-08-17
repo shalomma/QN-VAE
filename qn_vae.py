@@ -150,7 +150,7 @@ class Decoder(nn.Module):
         return self._conv_trans_2(x)
 
 
-class VQ_VAE(nn.Module):
+class QNVAE(nn.Module):
     def __init__(self, num_hidden, num_residual_layers, num_residual_hidden,
                  num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(VQ_VAE, self).__init__()

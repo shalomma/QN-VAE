@@ -2,7 +2,7 @@ import pickle
 import torch
 from torch.optim import Adam
 import loader
-from vq_vae import VQ_VAE, AE
+from qn_vae import QNVAE, AE
 from trainer import Trainer
 
 seed = 14
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     qn_model = dict()
     optimizer = dict()
     for q in quant_noise_probs:
-        qn_model[q] = VQ_VAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
+        qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                              params['num_embeddings'], params['embedding_dim'], params['commitment_cost']).to(device)
     qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
                      params['num_residual_hidden'], params['embedding_dim']).to(device)

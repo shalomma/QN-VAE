@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from vq_vae import VQ_VAE
+from qn_vae import QNVAE
 from torch.backends import cudnn
 
 
@@ -34,7 +34,7 @@ class Trainer:
                 recon_error = F.mse_loss(data_recon, samples) / self.data_variance
                 self.train_recon_error.append(recon_error.item())
                 loss = recon_error
-                if isinstance(self.model, VQ_VAE):
+                if isinstance(self.model, QNVAE):
                     loss += vq_loss
                 if phase == 'train':
                     loss.backward()
@@ -42,7 +42,7 @@ class Trainer:
 
                 to_print += f'{phase}: '
                 to_print += f'recon error: {np.mean(self.train_recon_error[-100:]):.4f}  '
-                if isinstance(self.model, VQ_VAE):
+                if isinstance(self.model, QNVAE):
                     self.train_perplexity.append(perplexity.item())
                     to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
             if i % 100 == 0:
