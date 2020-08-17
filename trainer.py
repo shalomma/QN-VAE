@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torch.backends import cudnn
 
-from qn_vae import QNVAE
+from qnvae import QNVAE
 
 
 cudnn.deterministic = True

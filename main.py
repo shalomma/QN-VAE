@@ -6,7 +6,7 @@ from datetime import datetime
 from git import Repo
 
 import loader
-from qn_vae import QNVAE, AE
+from qnvae import QNVAE, AE
 from trainer import Trainer
 from utils import save_model
 
