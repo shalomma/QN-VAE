@@ -179,21 +179,21 @@ class QNVAE(nn.Module):
 
 
 class AE(nn.Module):
-    def __init__(self, num_hiddens, num_residual_layers, num_residual_hiddens,
+    def __init__(self, num_hidden, num_residual_layers, num_residual_hidden,
                  embedding_dim):
         super(AE, self).__init__()
         torch.manual_seed(seed)
-        self._encoder = Encoder(3, num_hiddens,
+        self._encoder = Encoder(3, num_hidden,
                                 num_residual_layers,
-                                num_residual_hiddens)
-        self._pre_vq_conv = nn.Conv2d(in_channels=num_hiddens,
+                                num_residual_hidden)
+        self._pre_vq_conv = nn.Conv2d(in_channels=num_hidden,
                                       out_channels=embedding_dim,
                                       kernel_size=1,
                                       stride=1)
         self._decoder = Decoder(embedding_dim,
-                                num_hiddens,
+                                num_hidden,
                                 num_residual_layers,
-                                num_residual_hiddens)
+                                num_residual_hidden)
 
     def forward(self, x):
         z = self._encoder(x)
