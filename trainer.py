@@ -1,7 +1,15 @@
+import logging
 import numpy as np
 import torch
 import torch.nn.functional as F
-from vq_vae import VQ_VAE
+from torch.backends import cudnn
+
+from qn_vae import QNVAE
+
+
+cudnn.deterministic = True
+cudnn.benchmark = False
+cudnn.fastest = True
 
 
 class Trainer:
@@ -10,14 +18,15 @@ class Trainer:
         self.optimizer = optimizer
         self.loader = loader
         self.data_variance = np.var(loader['train'].dataset.data / 255.0)
-        self.epochs = 50
+        self.batches = 50
         self.phases = ['train', 'val']
         self.train_recon_error = []
         self.train_perplexity = []
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.log = logging.getLogger(__name__).info
 
     def run(self):
-        for i in range(self.epochs):
+        for i in range(self.batches):
             to_print = f'Batch {i:04}: '
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
@@ -28,7 +37,7 @@ class Trainer:
                 recon_error = F.mse_loss(data_recon, samples) / self.data_variance
                 self.train_recon_error.append(recon_error.item())
                 loss = recon_error
-                if isinstance(self.model, VQ_VAE):
+                if isinstance(self.model, QNVAE):
                     loss += vq_loss
                 if phase == 'train':
                     loss.backward()
@@ -36,8 +45,8 @@ class Trainer:
 
                 to_print += f'{phase}: '
                 to_print += f'recon error: {np.mean(self.train_recon_error[-100:]):.4f}  '
-                if isinstance(self.model, VQ_VAE):
+                if isinstance(self.model, QNVAE):
                     self.train_perplexity.append(perplexity.item())
                     to_print += f'perplexity: {np.mean(self.train_perplexity[-100:]):.4f} '
             if i % 100 == 0:
-                print(to_print)
+                self.log(to_print)

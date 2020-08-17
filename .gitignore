@@ -1,8 +1,13 @@
+.DS_Store
+models/
 .idea/
 __pycache__/
 data/
 venv/
 *.pt
+*.pkl
 *.json
 *.sh
+*.png
+*.log
 temp
