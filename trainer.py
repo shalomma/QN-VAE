@@ -6,7 +6,7 @@ from torch.backends import cudnn
 
 
 cudnn.deterministic = True
-cudnn.benchmark = True
+cudnn.benchmark = False
 cudnn.fastest = True
 
 
