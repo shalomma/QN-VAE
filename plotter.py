@@ -4,6 +4,7 @@ import pickle
 import umap
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 from torchvision.utils import make_grid
 from loader import CIFAR10Loader
 
@@ -27,6 +28,22 @@ class Plotter:
         img = img.numpy()
         return np.transpose(img, (1, 2, 0))
 
+    @staticmethod
+    def losses(params):
+        recon_error_smooth = dict()
+        for q in quant_noise_probs:
+            recon_error_smooth[q] = savgol_filter(params[q], 201, 7)
+        fig = plt.figure(figsize=(16, 8))
+        ax = fig.add_subplot(1, 1, 1)
+        for q in quant_noise_probs:
+            ax.plot(recon_error_smooth[q], label=f'q={q}')
+        ax.set_yscale('log')
+        ax.set_title('Smoothed Reconstruction Error (MSE)')
+        ax.set_xlabel('iteration')
+        ax.legend()
+        plt.savefig(f'loss.png')
+        plt.show()
+
     def recon_train(self):
         _, train_reconstructions, _, _ = self.models[1](self.images['train'])
         fig, axs = plt.subplots(1, 2, figsize=(10, 10))
@@ -35,7 +52,6 @@ class Plotter:
         axs[0].set_title('Input')
         axs[1].imshow(self.prepare_images(train_reconstructions), interpolation='nearest')
         axs[1].set_title('Reconstruction')
-
         plt.tight_layout()
         plt.savefig(f'img_train.png')
         plt.show()
@@ -60,7 +76,6 @@ class Plotter:
         axs[1, 1].set_title('q = 1')
         axs[1, 2].imshow(self.prepare_images(self.images['val']), interpolation='nearest')
         axs[1, 2].set_title('Input')
-
         for ax in axs.flat:
             ax.label_outer()
         plt.tight_layout()
@@ -96,13 +111,16 @@ if __name__ == '__main__':
 
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
     qn_model = dict()
-
+    params_ = dict()
     for q_ in quant_noise_probs:
         with open(f'models/{args.timestamp}/model_{q_}_cpu.pkl', 'rb') as f:
             qn_model[q_] = pickle.load(f).cpu()
+        with open(f'models/{args.timestamp}/params_{q_}.pkl', 'rb') as f:
+            params_[q_] = pickle.load(f)
 
     loaders_ = CIFAR10Loader().get(64)
     plotter = Plotter(qn_model, loaders_)
+    plotter.losses(params_)
     plotter.recon_train()
     plotter.recon_val()
     plotter.embedding()
