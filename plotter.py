@@ -32,7 +32,7 @@ class Plotter:
     def losses(params):
         recon_error_smooth = dict()
         for q in quant_noise_probs:
-            recon_error_smooth[q] = savgol_filter(params[q], 201, 7)
+            recon_error_smooth[q] = savgol_filter(params[q]['loss'], 201, 7)
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
