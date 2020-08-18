@@ -70,8 +70,9 @@ class Plotter:
     def embedding(self):
         proj = dict()
         for q, model in self.models.items():
-            proj[q] = umap.UMAP(n_neighbors=3, min_dist=0.1,
-                                metric='cosine').fit_transform(model.vq_vae.embedding.weight.data.cpu())
+            if q != 0:
+                proj[q] = umap.UMAP(n_neighbors=3, min_dist=0.1,
+                                    metric='cosine').fit_transform(model.vq_vae.embedding.weight.data.cpu())
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
         fig.suptitle('UMAP projection of embedding (codebook)')
         axs[0, 0].scatter(proj[0.25][:, 0], proj[0.25][:, 1], alpha=0.3)
@@ -85,6 +86,7 @@ class Plotter:
         for ax in axs.flat:
             ax.label_outer()
         plt.savefig(f'emb.png')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -103,4 +105,4 @@ if __name__ == '__main__':
     plotter = Plotter(qn_model, loaders_)
     plotter.recon_train()
     plotter.recon_val()
-    # plotter.embedding()
+    plotter.embedding()
