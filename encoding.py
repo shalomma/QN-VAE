@@ -31,7 +31,7 @@ if __name__ == '__main__':
             for samples, labels in loaders[phase]:
                 samples, labels = samples.to(device), labels.to(device)
                 _, _, _, encoding = model(samples)
-                encode_dataset = torch.cat((encode_dataset, encoding))
-                labels_dataset = torch.cat((labels_dataset, labels))
+                encode_dataset = torch.cat((encode_dataset, encoding.float()))
+                labels_dataset = torch.cat((labels_dataset, labels.float()))
         torch.save(encode_dataset, f'./data/encoded_{q_}.pt')
         torch.save(labels_dataset, f'./data/encoded_labels_{q_}.pt')
