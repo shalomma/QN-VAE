@@ -1,3 +1,4 @@
+import argparse
 import torch
 import pickle
 import umap
@@ -27,7 +28,7 @@ class Plotter:
         return np.transpose(img, (1, 2, 0))
 
     def recon_train(self):
-        _, train_reconstructions, _ = self.models[1](self.images['train'])
+        _, train_reconstructions, _, _ = self.models[1](self.images['train'])
         fig, axs = plt.subplots(1, 2, figsize=(10, 10))
         fig.suptitle('Training Reconstruction')
         axs[0].imshow(self.prepare_images(self.images['train']), interpolation='nearest')
@@ -43,7 +44,7 @@ class Plotter:
         images = dict()
         for q, model in self.models.items():
             model.eval()
-            _, valid_reconstructions, _ = model(self.images['val'])
+            _, valid_reconstructions, _, _ = model(self.images['val'])
             images[q] = self.prepare_images(valid_reconstructions)
         fig, axs = plt.subplots(2, 3, figsize=(10, 10))
         fig.suptitle('Validation Reconstruction')
@@ -87,10 +88,15 @@ class Plotter:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('timestamp', type=str, help='models timestamp')
+    args = parser.parse_args()
+
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
     qn_model = dict()
+
     for q_ in quant_noise_probs:
-        with open(f'model_{q_}_cpu.pkl', 'rb') as f:
+        with open(f'models/{args.timestamp}/model_{q_}_cpu.pkl', 'rb') as f:
             qn_model[q_] = pickle.load(f).cpu()
 
     loaders_ = CIFAR10Loader().get(64)
