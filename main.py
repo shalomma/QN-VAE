@@ -44,20 +44,18 @@ if __name__ == '__main__':
     log.info(device)
 
     qn_model = dict()
-    optimizer = dict()
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost']).to(device)
     qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
                      params['num_residual_hidden'], params['embedding_dim']).to(device)
-    for q in quant_noise_probs:
-        optimizer[q] = Adam(qn_model[q].parameters(), lr=params['learning_rate'], amsgrad=False)
 
     loaders = loader.CIFAR10Loader().get(params['batch_size'])
 
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
-        trainer = trainer.VAETrainer(qn_model[q], optimizer[q], loaders)
+        optimizer = Adam(qn_model[q].parameters(), lr=params['learning_rate'], amsgrad=False)
+        trainer = trainer.VAETrainer(qn_model[q], optimizer, loaders)
         trainer.batches = params['batches']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
