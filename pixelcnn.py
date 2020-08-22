@@ -168,34 +168,34 @@ class GatedBlock(nn.Module, ABC):
 
 
 class PixelCNN(nn.Module, ABC):
-    def __init__(self, cfg):
+    def __init__(self, hidden_fmaps, color_levels, hidden_layers, causal_ksize, hidden_ksize, out_hidden_fmaps):
         super(PixelCNN, self).__init__()
 
-        data_channels = 3
+        data_channels = 1
 
-        self.hidden_f_maps = cfg.hidden_fmaps
-        self.color_levels = cfg.color_levels
+        self.hidden_f_maps = hidden_fmaps
+        self.color_levels = color_levels
 
         self.causal_conv = CausalBlock(data_channels,
-                                       cfg.hidden_fmaps,
-                                       cfg.causal_ksize,
+                                       hidden_fmaps,
+                                       causal_ksize,
                                        data_channels=data_channels)
 
         self.hidden_conv = nn.Sequential(
-            *[GatedBlock(cfg.hidden_fmaps, cfg.hidden_fmaps, cfg.hidden_ksize, data_channels)
-              for _ in range(cfg.hidden_layers)]
+            *[GatedBlock(hidden_fmaps, hidden_fmaps, hidden_ksize, data_channels)
+              for _ in range(hidden_layers)]
         )
 
         self.label_embedding = nn.Embedding(10, self.hidden_f_maps)
 
-        self.out_hidden_conv = MaskedConv2d(cfg.hidden_fmaps,
-                                            cfg.out_hidden_fmaps,
+        self.out_hidden_conv = MaskedConv2d(hidden_fmaps,
+                                            out_hidden_fmaps,
                                             (1, 1),
                                             mask_type='B',
                                             data_channels=data_channels)
 
-        self.out_conv = MaskedConv2d(cfg.out_hidden_fmaps,
-                                     data_channels * cfg.color_levels,
+        self.out_conv = MaskedConv2d(out_hidden_fmaps,
+                                     data_channels * color_levels,
                                      (1, 1),
                                      mask_type='B',
                                      data_channels=data_channels)
