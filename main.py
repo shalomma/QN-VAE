@@ -7,7 +7,7 @@ from git import Repo
 
 import loader
 from qnvae import QNVAE, AE
-from trainer import Trainer
+import trainer
 from utils import save_model
 
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
-        trainer = Trainer(qn_model[q], optimizer[q], loaders)
+        trainer = trainer.VAETrainer(qn_model[q], optimizer[q], loaders)
         trainer.batches = params['batches']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]

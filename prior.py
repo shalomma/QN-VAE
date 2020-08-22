@@ -5,7 +5,7 @@ from torch.optim import Adam
 
 import loader
 from pixelcnn import PixelCNN
-from trainer import Trainer
+import trainer
 
 
 if __name__ == '__main__':
@@ -33,6 +33,6 @@ if __name__ == '__main__':
         prior_model = PixelCNN(hidden_fmaps, color_levels, hidden_layers,
                                causal_ksize, hidden_ksize, out_hidden_fmaps)
         optimizer = Adam(prior_model.parameters(), lr=learning_rate, amsgrad=False)
-        trainer = Trainer(prior_model, optimizer, loaders)
+        trainer = trainer.PriorTrainer(prior_model, optimizer, loaders)
         trainer.batches = batches
         trainer.run()
