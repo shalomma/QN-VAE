@@ -24,7 +24,7 @@ if __name__ == '__main__':
     out_hidden_fmaps = 10
 
     learning_rate = 1e-4
-    batch_size = 1024
+    batch_size = 256
     batches = 1000
 
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
