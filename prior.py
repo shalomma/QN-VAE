@@ -39,22 +39,18 @@ if __name__ == '__main__':
         'num_embeddings': 512
     }
 
-    normalize = transforms.Lambda(lambda image: np.array(image) / params['num_embeddings'])
-
     def quantize(image, levels):
         return np.digitize(image, np.arange(levels) / levels) - 1
 
     discretize = transforms.Compose([
+        transforms.Lambda(lambda image: np.array(image) / params['num_embeddings']),
         transforms.Lambda(lambda image: quantize(image, params['levels'])),
-        transforms.ToTensor()
     ])
-
-    transform = transforms.Compose([normalize, discretize])
 
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
-        loaders = loader.EncodedLoader(root_dir, q, transform).get(params['batch_size'])
+        loaders = loader.EncodedLoader(root_dir, q, discretize).get(params['batch_size'])
         prior_model = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps'])
         optimizer = Adam(prior_model.parameters(), lr=params['learning_rate'], amsgrad=False)
