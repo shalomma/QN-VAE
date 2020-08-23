@@ -28,14 +28,14 @@ if __name__ == '__main__':
 
     params = {
         'batch_size': 256,
-        'batches': 2000,
+        'batches': 20000,
         'hidden_fmaps': 21,
         'levels': 20,
         'hidden_layers': 6,
         'causal_ksize': 7,
         'hidden_ksize': 7,
         'out_hidden_fmaps': 10,
-        'learning_rate': 1e-4,
+        'learning_rate': 1e-3,
         'num_embeddings': 512
     }
 
