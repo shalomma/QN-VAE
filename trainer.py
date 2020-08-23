@@ -40,7 +40,8 @@ class Trainer(ABC):
 
                 to_print += f'\t{phase}: '
                 for metric, values in self.metrics.items():
-                    to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
+                    if values:
+                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
             if i % 100 == 0:
                 self.log(to_print)
 
