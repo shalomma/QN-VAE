@@ -14,10 +14,10 @@ class Loader:
         manual_seed(self.seed)
         self.data = dict()
 
-    def get(self, batch_size):
+    def get(self, batch_size, pin_memory=True):
         loaders = dict()
-        loaders['train'] = DataLoader(self.data['train'], batch_size=batch_size, shuffle=True, pin_memory=True)
-        loaders['val'] = DataLoader(self.data['val'], batch_size=batch_size, shuffle=True, pin_memory=True)
+        loaders['train'] = DataLoader(self.data['train'], batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+        loaders['val'] = DataLoader(self.data['val'], batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
         return loaders
 
 
@@ -56,8 +56,8 @@ class ImageNetLoader(Loader):
 class EncodedLoader(Loader):
     def __init__(self, root_dir, q, transform=None):
         super(EncodedLoader, self).__init__()
-        size = 50000
-        val_size = 5000
+        size = 60000
+        val_size = 12000
         data_indices = np.arange(0, size)
         val_indices = np.random.choice(data_indices, val_size, replace=False)
         train_indices = np.array(list(set(data_indices) - set(val_indices)))
