@@ -9,7 +9,7 @@ from git import Repo
 
 import loader
 from pixelcnn import PixelCNN
-import trainer
+from trainer import PriorTrainer
 from utils import save_model
 
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         prior_model = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
         optimizer = Adam(prior_model.parameters(), lr=params['learning_rate'], amsgrad=False)
-        trainer = trainer.PriorTrainer(prior_model, optimizer, loaders)
+        trainer = PriorTrainer(prior_model, optimizer, loaders)
         trainer.levels = params['levels']
         trainer.batches = params['batches']
         trainer.run()
