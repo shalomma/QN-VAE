@@ -24,6 +24,7 @@ if __name__ == '__main__':
 
     root_dir = os.path.join('models', args.timestamp)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info(device)
 
     params = {
         'batch_size': 256,
@@ -52,6 +53,7 @@ if __name__ == '__main__':
 
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q in quant_noise_probs:
+        log.info(f'Train q={q}')
         loaders = loader.EncodedLoader(root_dir, q, transform).get(params['batch_size'])
         prior_model = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps'])
