@@ -59,5 +59,6 @@ if __name__ == '__main__':
         trainer.batches = params['batches']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
-        params['loss'] = trainer.train_recon_error
-        save_model(qn_model[q], params, q, f'models/{timestamp}')
+        params['loss'] = trainer.metrics['loss']
+        params['perplexity'] = trainer.metrics['perplexity']
+        save_model(qn_model[q], params, 'vqvae', q, f'models/{timestamp}')
