@@ -9,7 +9,7 @@ class Encoded(data.Dataset):
         self.data = torch.load(os.path.join(root_dir, f'encoded_{q}.pt'), map_location=device).view(-1, 8, 8, 1)
         self.y = torch.load(os.path.join(root_dir, f'encoded_labels_{q}.pt'), map_location=device)
         self.data = self.data[indices].to(device)
-        self.y = self.y[indices].to(device)
+        self.y = self.y[indices].to(device).long()
         self.transform = transform
 
     def __len__(self):
