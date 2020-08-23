@@ -54,12 +54,12 @@ class ImageNetLoader(Loader):
 
 
 class EncodedLoader(Loader):
-    def __init__(self, root_dir, q):
+    def __init__(self, root_dir, q, transform=None):
         super(EncodedLoader, self).__init__()
         size = 50000
         val_size = 5000
         data_indices = np.arange(0, size)
         val_indices = np.random.choice(data_indices, val_size, replace=False)
         train_indices = np.array(list(set(data_indices) - set(val_indices)))
-        self.data['train'] = dataset.Encoded(root_dir, q, train_indices)
-        self.data['val'] = dataset.Encoded(root_dir, q, val_indices)
+        self.data['train'] = dataset.Encoded(root_dir, q, train_indices, transform)
+        self.data['val'] = dataset.Encoded(root_dir, q, val_indices, transform)
