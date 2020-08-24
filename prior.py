@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('timestamp', type=str, help='models timestamp')
     args = parser.parse_args()
 
-    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{args.timestamp}/training.log'},
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{args.timestamp}/training_prior.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
 
