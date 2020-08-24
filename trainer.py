@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.backends import cudnn
 
@@ -32,11 +33,7 @@ class Trainer(ABC):
                 samples = samples.to(self.device, non_blocking=True)
                 labels = labels.to(self.device, non_blocking=True)
                 self.optimizer.zero_grad()
-                loss = self.compare(samples, labels)
-
-                if phase == 'train':
-                    loss.backward()
-                    self.optimizer.step()
+                self.step(samples, labels)
 
                 to_print += f'\t{phase}: '
                 for metric, values in self.metrics.items():
@@ -46,7 +43,7 @@ class Trainer(ABC):
                 self.log(to_print)
 
     @abstractmethod
-    def compare(self, samples, labels):
+    def step(self, samples, labels):
         pass
 
 
@@ -59,7 +56,7 @@ class VAETrainer(Trainer):
             'perplexity': []
         }
 
-    def compare(self, samples, labels):
+    def step(self, samples, labels):
         vq_loss, data_recon, perplexity, encoding = self.model(samples)
         recon_error = F.mse_loss(data_recon, samples) / self.data_variance
         self.metrics['loss'].append(recon_error.item())
@@ -68,7 +65,9 @@ class VAETrainer(Trainer):
             loss += vq_loss
         if perplexity is not None:
             self.metrics['perplexity'].append(perplexity.item())
-        return loss
+        if self.model.training:
+            loss.backward()
+            self.optimizer.step()
 
 
 class PriorTrainer(Trainer):
@@ -78,10 +77,14 @@ class PriorTrainer(Trainer):
             'loss': []
         }
         self.levels = None
+        self.max_norm = None
 
-    def compare(self, samples, labels):
+    def step(self, samples, labels):
         normalized_samples = samples.float() / (self.levels - 1)
         outputs = self.model(normalized_samples, labels)
         loss = F.cross_entropy(outputs, samples)
         self.metrics['loss'].append(loss.item())
-        return loss
+        if self.model.training:
+            loss.backward()
+            nn.utils.clip_grad_norm(self.model.parameters(), max_norm=self.max_norm)
+            self.optimizer.step()

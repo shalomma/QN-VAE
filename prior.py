@@ -35,6 +35,7 @@ if __name__ == '__main__':
         'causal_ksize': 7,
         'hidden_ksize': 7,
         'out_hidden_fmaps': 10,
+        'max_norm': 1.,
         'learning_rate': 1e-3,
         'num_embeddings': 512
     }
@@ -57,6 +58,7 @@ if __name__ == '__main__':
         trainer = PriorTrainer(prior_model, optimizer, loaders)
         trainer.levels = params['levels']
         trainer.batches = params['batches']
+        trainer.max_norm = params['max_norm']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
         params['loss'] = trainer.metrics['loss']
