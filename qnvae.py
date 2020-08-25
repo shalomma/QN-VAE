@@ -57,7 +57,8 @@ class VectorQuantizer(nn.Module, ABC):
         perplexity = torch.exp(-torch.sum(avg_prob * torch.log(avg_prob + 1e-10)))
 
         # convert quantized from BHWC -> BCHW
-        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, encoding_indices.view(input_shape[:3])
+        return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, \
+            None if self.training else encoding_indices.view(input_shape[:3])
 
 
 class Residual(nn.Module, ABC):
