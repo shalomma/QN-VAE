@@ -62,4 +62,4 @@ if __name__ == '__main__':
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
         params['loss'] = trainer.metrics['loss']
-        save_model(prior_model, params, 'pixcelcnn', q, f'models/{args.timestamp}')
+        save_model(prior_model, params, 'pixelcnn', q, f'models/{args.timestamp}')
