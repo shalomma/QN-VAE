@@ -12,7 +12,7 @@ from loader import CIFAR10Loader
 class Plotter:
     def __init__(self, models, loaders):
         self.models = models
-        [m.eval() for m in self.models]
+        [m.eval() for _, m in self.models.items()]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.loaders = loaders
         self.images = dict()
@@ -43,6 +43,22 @@ class Plotter:
         ax.set_xlabel('iteration')
         ax.legend()
         plt.savefig(f'loss.png')
+        plt.show()
+
+    @staticmethod
+    def perplexity(params):
+        recon_error_smooth = dict()
+        for q in quant_noise_probs:
+            if q != 0:
+                recon_error_smooth[q] = savgol_filter(params[q]['perplexity'], 201, 7)
+        fig = plt.figure(figsize=(16, 8))
+        ax = fig.add_subplot(1, 1, 1)
+        for q, values in recon_error_smooth.items():
+            ax.plot(values, label=f'q={q}')
+        ax.set_title('perplexity')
+        ax.set_xlabel('iteration')
+        ax.legend()
+        plt.savefig(f'perplexity.png')
         plt.show()
 
     def recon_train(self):
@@ -121,6 +137,7 @@ if __name__ == '__main__':
     loaders_ = CIFAR10Loader().get(64)
     plotter = Plotter(qn_model, loaders_)
     plotter.losses(params_)
+    plotter.perplexity(params_)
     plotter.recon_train()
     plotter.recon_val()
     plotter.embedding()
