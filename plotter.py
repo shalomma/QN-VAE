@@ -12,6 +12,7 @@ from loader import CIFAR10Loader
 class Plotter:
     def __init__(self, models, loaders):
         self.models = models
+        [m.eval() for m in self.models]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.loaders = loaders
         self.images = dict()
@@ -59,7 +60,6 @@ class Plotter:
     def recon_val(self):
         images = dict()
         for q, model in self.models.items():
-            model.eval()
             _, valid_reconstructions, _, _ = model(self.images['val'])
             images[q] = self.prepare_images(valid_reconstructions)
         fig, axs = plt.subplots(2, 3, figsize=(10, 10))
@@ -113,9 +113,9 @@ if __name__ == '__main__':
     qn_model = dict()
     params_ = dict()
     for q_ in quant_noise_probs:
-        with open(f'models/{args.timestamp}/model_{q_}_cpu.pkl', 'rb') as f:
+        with open(f'models/{args.timestamp}/vqvae_{q_}_cpu.pkl', 'rb') as f:
             qn_model[q_] = pickle.load(f).cpu()
-        with open(f'models/{args.timestamp}/params_{q_}.pkl', 'rb') as f:
+        with open(f'models/{args.timestamp}/vqvae_params_{q_}.pkl', 'rb') as f:
             params_[q_] = pickle.load(f)
 
     loaders_ = CIFAR10Loader().get(64)
