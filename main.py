@@ -64,3 +64,5 @@ if __name__ == '__main__':
         params['perplexity'] = trainer.metrics['perplexity']
         params['quant_noise'] = q
         save_model(model, params, 'qnvae', q, f'models/{timestamp}')
+
+    log.info(f'Done. timestamp: {timestamp}')
