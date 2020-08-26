@@ -86,5 +86,5 @@ class PriorTrainer(Trainer):
         self.metrics['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
-            nn.utils.clip_grad_norm(self.model.parameters(), max_norm=self.max_norm)
+            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
             self.optimizer.step()
