@@ -62,4 +62,5 @@ if __name__ == '__main__':
         params['commit'] = Repo('./').head.commit.hexsha[:7]
         params['loss'] = trainer.metrics['loss']
         params['perplexity'] = trainer.metrics['perplexity']
+        params['quant_noise'] = q
         save_model(model, params, 'qnvae', q, f'models/{timestamp}')
