@@ -157,6 +157,7 @@ class QNVAE(nn.Module, ABC):
                  num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(QNVAE, self).__init__()
         torch.manual_seed(seed)
+        self.embedding_dim = embedding_dim
         self._encoder = Encoder(3, num_hidden,
                                 num_residual_layers,
                                 num_residual_hidden)
@@ -177,6 +178,18 @@ class QNVAE(nn.Module, ABC):
         loss, quantized, perplexity, encoding = self.vq_vae(z)
         x_recon = self._decoder(quantized)
         return loss, x_recon, perplexity, encoding
+
+    def decode_samples(self, encoding_indices):
+        batch, _, w, h = encoding_indices.shape
+        encoding_indices = encoding_indices.view(-1, 1).long()
+        flattened_size = encoding_indices.shape[0]
+        encodings = torch.zeros(flattened_size, self.vq_vae._num_embeddings, device=encoding_indices.device)
+        encodings.scatter_(1, encoding_indices, 1)
+        quantized = torch.matmul(encodings, self.vq_vae.embedding.weight)
+        quantized = quantized.view([batch, w, h, self.embedding_dim])
+        quantized = quantized.permute(0, 3, 1, 2).contiguous()
+        x_recon = self._decoder(quantized)
+        return x_recon
 
 
 class AE(nn.Module, ABC):
