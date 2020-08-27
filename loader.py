@@ -32,6 +32,17 @@ class CIFAR10Loader(Loader):
         self.data['val'] = datasets.CIFAR10(root="data", train=False, download=True, transform=compose)
 
 
+class MNISTLoader(Loader):
+    def __init__(self):
+        super(MNISTLoader, self).__init__()
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+        self.data['train'] = datasets.MNIST('data', train=True, download=True, transform=transform)
+        self.data['val'] = datasets.MNIST('data', train=False, transform=transform)
+
+
 class ImageNetLoader(Loader):
     def __init__(self):
         super(ImageNetLoader, self).__init__()
