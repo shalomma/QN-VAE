@@ -43,7 +43,7 @@ class Trainer(ABC):
                 for metric, values in self.metrics.items():
                     if values:
                         to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
-            if i % 1 == 0:
+            if i % 100 == 0:
                 self.log(to_print)
 
     @abstractmethod
