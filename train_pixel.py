@@ -18,8 +18,8 @@ if __name__ == '__main__':
     log.info(device)
 
     params = {
-        'batch_size': 32,
-        'batches': 10,
+        'batch_size': 256,
+        'batches': 3000,
         'hidden_fmaps': 30,
         'levels': 2,
         'hidden_layers': 6,
@@ -49,5 +49,5 @@ if __name__ == '__main__':
     trainer.batches = params['batches']
     trainer.max_norm = params['max_norm']
     trainer.run()
-    samples = model_pixelcnn.sample((1, 28, 28), 1, label=None, device=device)
+    samples = model_pixelcnn.sample((1, 28, 28), 16, label=None, device=device)
     save_samples(samples, './', f'samples.png')
