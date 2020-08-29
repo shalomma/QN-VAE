@@ -33,12 +33,8 @@ class CIFAR10Loader(Loader):
 
 
 class MNISTLoader(Loader):
-    def __init__(self):
+    def __init__(self, transform):
         super(MNISTLoader, self).__init__()
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
         self.data['train'] = datasets.MNIST('data', train=True, download=True, transform=transform)
         self.data['val'] = datasets.MNIST('data', train=False, transform=transform)
 
