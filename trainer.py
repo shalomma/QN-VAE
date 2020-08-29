@@ -14,10 +14,11 @@ cudnn.fastest = True
 
 
 class Trainer(ABC):
-    def __init__(self, model, optimizer, loader):
+    def __init__(self, model, optimizer, loader, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.loader = loader
+        self.scheduler = scheduler
         self.batches = 50
         self.phases = ['train', 'val']
         self.metrics = dict()
@@ -35,11 +36,14 @@ class Trainer(ABC):
                 self.optimizer.zero_grad()
                 self.step(samples, labels)
 
+                if phase == 'train' and self.scheduler is not None:
+                    self.scheduler.step()
+
                 to_print += f'\t{phase}: '
                 for metric, values in self.metrics.items():
                     if values:
                         to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
-            if i % 100 == 0:
+            if i % 1 == 0:
                 self.log(to_print)
 
     @abstractmethod
@@ -48,8 +52,8 @@ class Trainer(ABC):
 
 
 class VAETrainer(Trainer):
-    def __init__(self, model, optimizer, loader):
-        super(VAETrainer, self).__init__(model, optimizer, loader)
+    def __init__(self, model, optimizer, loader, scheduler):
+        super(VAETrainer, self).__init__(model, optimizer, loader, scheduler)
         self.data_variance = np.var(loader['train'].dataset.data / 255.0)
         self.metrics = {
             'loss': [],
@@ -71,8 +75,8 @@ class VAETrainer(Trainer):
 
 
 class PriorTrainer(Trainer):
-    def __init__(self, model, optimizer, loader):
-        super(PriorTrainer, self).__init__(model, optimizer, loader)
+    def __init__(self, model, optimizer, loader, scheduler):
+        super(PriorTrainer, self).__init__(model, optimizer, loader, scheduler)
         self.metrics = {
             'loss': []
         }
