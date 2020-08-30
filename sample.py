@@ -1,26 +1,9 @@
-import os
 import torch
 import argparse
-from torchvision.utils import save_image
 
-from utils import load_model
+from utils import load_model, save_samples
 from qnvae import QNVAE
 from pixelcnn import PixelCNN
-
-
-def save_samples(samples, dirname, filename):
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
-
-    count = samples.size()[0]
-
-    count_sqrt = int(count ** 0.5)
-    if count_sqrt ** 2 == count:
-        nrow = count_sqrt
-    else:
-        nrow = count
-
-    save_image(samples, os.path.join(dirname, filename), nrow=nrow)
 
 
 if __name__ == '__main__':
