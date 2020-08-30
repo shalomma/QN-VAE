@@ -34,7 +34,7 @@ if __name__ == '__main__':
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q_ in quant_noise_probs:
         print(f'Train q={q_}')
-        model_pixelcnn = load_model(PixelCNN, 'pixelcnn', q_, directory)
+        model_pixelcnn, _ = load_model(PixelCNN, 'pixelcnn', q_, directory)
         encoding = model_pixelcnn.sample((1, 8, 8), 64, label=None, device=device)
         save_samples(encoding, directory, f'encoding_{q_}.png')
         model_qnvae = load_model(QNVAE, 'qnvae', q_, directory)

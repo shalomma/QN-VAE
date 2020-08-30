@@ -1,12 +1,13 @@
 import argparse
 import torch
-import pickle
 import umap
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from torchvision.utils import make_grid
-from loader import CIFAR10Loader
+from qnvae import QNVAE
+import loader
+from utils import load_model
 
 
 class Plotter:
@@ -126,15 +127,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
-    qn_model = dict()
-    params_ = dict()
+    qn_model, params_ = dict(), dict()
     for q_ in quant_noise_probs:
-        with open(f'models/{args.timestamp}/vqvae_{q_}_cpu.pkl', 'rb') as f:
-            qn_model[q_] = pickle.load(f).cpu()
-        with open(f'models/{args.timestamp}/vqvae_params_{q_}.pkl', 'rb') as f:
-            params_[q_] = pickle.load(f)
+        qn_model[q_], params_[q_] = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
 
-    loaders_ = CIFAR10Loader().get(64)
+    loaders_ = loader.CIFAR10Loader().get(64)
     plotter = Plotter(qn_model, loaders_)
     plotter.losses(params_)
     plotter.perplexity(params_)

@@ -17,7 +17,7 @@ if __name__ == '__main__':
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     qn_model = dict()
     for q_ in quant_noise_probs:
-        qn_model[q_] = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
+        qn_model[q_], _ = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
 
     loaders = loader.CIFAR10Loader().get(batch_size)
     for q_, model in qn_model.items():

@@ -20,4 +20,4 @@ def load_model(model_class, prefix, q, directory):
     model = model_class(**params_class).to(device)
     model.load_state_dict(torch.load(f'{directory}/{prefix}_{q}_state.pt'))
     model.eval()
-    return model
+    return model, params
