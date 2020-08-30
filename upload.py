@@ -16,7 +16,9 @@ class Upload:
         file_.Upload()
         print('title: %s, id: %s' % (file_['title'], file_['id']))
 
-    def files(self, path, regex):
+    def files(self, path, regex=None):
+        if regex is None:
+            regex = '*'
         for f in glob.glob(os.path.join(path, regex)):
             self.file(f)
 
