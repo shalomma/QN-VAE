@@ -11,7 +11,7 @@ class VectorQuantizer(nn.Module, ABC):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(VectorQuantizer, self).__init__()
         torch.manual_seed(seed)
-        self._embedding_dim = embedding_dim
+        self.num_embeddings = embedding_dim
         self._num_embeddings = num_embeddings
 
         self.embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
@@ -21,7 +21,7 @@ class VectorQuantizer(nn.Module, ABC):
         self.quant_noise = quant_noise
 
     def forward(self, inputs):
-        # convert inputs from BCHW -> BHWC
+        # convert inputs from (B,C,H,W) -> (B,H,W,C)
         inputs = inputs.permute(0, 2, 3, 1).contiguous()
         input_shape = inputs.shape
 
@@ -56,7 +56,7 @@ class VectorQuantizer(nn.Module, ABC):
         avg_prob = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_prob * torch.log(avg_prob + 1e-10)))
 
-        # convert quantized from BHWC -> BCHW
+        # convert quantized from (B,H,W,C) -> (B,C,H,W)
         return loss, quantized.permute(0, 3, 1, 2).contiguous(), perplexity, \
             None if self.training else encoding_indices.view(input_shape[:3])
 
@@ -183,7 +183,7 @@ class QNVAE(nn.Module, ABC):
         batch, _, w, h = encoding_indices.shape
         encoding_indices = encoding_indices.view(-1, 1).long()
         flattened_size = encoding_indices.shape[0]
-        encodings = torch.zeros(flattened_size, self.vq_vae._num_embeddings, device=encoding_indices.device)
+        encodings = torch.zeros(flattened_size, self.vq_vae.num_embeddings, device=encoding_indices.device)
         encodings.scatter_(1, encoding_indices, 1)
         quantized = torch.matmul(encodings, self.vq_vae.embedding.weight)
         quantized = quantized.view([batch, w, h, self.embedding_dim])
