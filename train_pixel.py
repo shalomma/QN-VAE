@@ -28,6 +28,7 @@ if __name__ == '__main__':
         'out_hidden_fmaps': 10,
         'max_norm': 1.,
         'learning_rate': 1e-4,
+        'weight_decay': 1e-4,
         'num_embeddings': 512
     }
 
@@ -41,7 +42,7 @@ if __name__ == '__main__':
     loaders = loader.MNISTLoader(to_rgb).get(params['batch_size'], pin_memory=False)
     model_pixelcnn = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
                               params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
-    optimizer = optim.Adam(model_pixelcnn.parameters(), lr=params['learning_rate'], weight_decay=1e-4)
+    optimizer = optim.Adam(model_pixelcnn.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
     scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
                                             10 * params['learning_rate'], cycle_momentum=False)
     trainer = PriorTrainer(model_pixelcnn, optimizer, loaders, scheduler)
