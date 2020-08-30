@@ -37,6 +37,6 @@ if __name__ == '__main__':
         model_pixelcnn, _ = load_model(PixelCNN, 'pixelcnn', q_, directory)
         encoding = model_pixelcnn.sample((1, 8, 8), 64, label=None, device=device)
         save_samples(encoding, directory, f'encoding_{q_}.png')
-        model_qnvae = load_model(QNVAE, 'qnvae', q_, directory)
+        model_qnvae, _ = load_model(QNVAE, 'qnvae', q_, directory)
         decoded = model_qnvae.decode_samples(encoding)
         save_samples(decoded, directory, f'decoded_{q_}.png')
