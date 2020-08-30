@@ -1,7 +1,7 @@
 import os
 import logging.config
 import torch
-from torch.optim import Adam
+from torch import optim
 from datetime import datetime
 from git import Repo
 
@@ -55,8 +55,11 @@ if __name__ == '__main__':
 
     for q, model in qn_model.items():
         log.info(f'Train q={q}')
-        optimizer = Adam(model.parameters(), lr=params['learning_rate'], amsgrad=False)
-        trainer = VAETrainer(model, optimizer, loaders)
+        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'],
+                               weight_decay=params['weight_decay'])
+        scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
+                                                10 * params['learning_rate'], cycle_momentum=False)
+        trainer = VAETrainer(model, optimizer, loaders, scheduler)
         trainer.batches = params['batches']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
