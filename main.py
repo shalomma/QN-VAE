@@ -35,7 +35,8 @@ if __name__ == '__main__':
         'embedding_dim': 64,
         'num_embeddings': 512,
         'commitment_cost': 0.25,
-        'learning_rate': 1e-3
+        'learning_rate': 1e-4,
+        'weight_decay': 1e-4
     }
 
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
