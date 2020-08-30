@@ -2,7 +2,7 @@ import os
 import numpy as np
 import argparse
 import torch
-from torch.optim import Adam
+from torch import optim
 import torchvision.transforms as transforms
 import logging.config
 from git import Repo
@@ -28,15 +28,16 @@ if __name__ == '__main__':
 
     params = {
         'batch_size': 256,
-        'batches': 20000,
-        'hidden_fmaps': 21,
-        'levels': 20,
+        'batches': 5000,
+        'hidden_fmaps': 30,
+        'levels': 10,
         'hidden_layers': 6,
         'causal_ksize': 7,
         'hidden_ksize': 7,
         'out_hidden_fmaps': 10,
         'max_norm': 1.,
-        'learning_rate': 1e-3,
+        'learning_rate': 1e-4,
+        'weight_decay': 1e-4,
         'num_embeddings': 512
     }
 
@@ -54,11 +55,14 @@ if __name__ == '__main__':
         loaders = loader.EncodedLoader(root_dir, q, discretize).get(params['batch_size'], pin_memory=False)
         prior_model = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
-        optimizer = Adam(prior_model.parameters(), lr=params['learning_rate'], amsgrad=False)
-        trainer = PriorTrainer(prior_model, optimizer, loaders)
+        optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
+                               weight_decay=params['weight_decay'])
+        scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
+                                                10 * params['learning_rate'], cycle_momentum=False)
+        trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
+        trainer.max_norm = params['max_norm']
         trainer.levels = params['levels']
         trainer.batches = params['batches']
-        trainer.max_norm = params['max_norm']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
         params['loss'] = trainer.metrics['loss']
