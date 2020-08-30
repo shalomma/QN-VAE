@@ -14,7 +14,7 @@ cudnn.fastest = True
 
 
 class Trainer(ABC):
-    def __init__(self, model, optimizer, loader, scheduler):
+    def __init__(self, model, optimizer, loader, scheduler=None):
         self.model = model
         self.optimizer = optimizer
         self.loader = loader
