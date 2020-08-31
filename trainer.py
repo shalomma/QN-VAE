@@ -75,20 +75,22 @@ class VAETrainer(Trainer):
 
 
 class PriorTrainer(Trainer):
-    def __init__(self, model, optimizer, loader, scheduler):
-        super(PriorTrainer, self).__init__(model, optimizer, loader, scheduler)
+    def __init__(self, prior, model, optimizer, loader, scheduler):
+        super(PriorTrainer, self).__init__(prior, optimizer, loader, scheduler)
         self.metrics = {
             'loss': []
         }
-        self.levels = None
-        self.max_norm = None
+        self.encoder = model
 
     def step(self, samples, labels):
-        normalized_samples = samples.float() / (self.levels - 1)
-        outputs = self.model(normalized_samples, labels)
-        loss = F.cross_entropy(outputs, samples)
+        with torch.no_grad():
+            _, _, _, latents = self.encoder.encode(samples)
+            latents = latents.detach()
+
+        logits = self.model(latents, labels)
+        logits = logits.permute(0, 2, 3, 1).contiguous()
+        loss = F.cross_entropy(logits.view(-1, self.model.input_dim), latents.view(-1))
         self.metrics['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
-            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
             self.optimizer.step()
