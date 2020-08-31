@@ -11,7 +11,7 @@ class VectorQuantizer(nn.Module, ABC):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(VectorQuantizer, self).__init__()
         torch.manual_seed(seed)
-        self.num_embeddings = embedding_dim
+        self._embedding_dim = embedding_dim
         self._num_embeddings = num_embeddings
 
         self.embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
@@ -157,7 +157,7 @@ class QNVAE(nn.Module, ABC):
                  num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(QNVAE, self).__init__()
         torch.manual_seed(seed)
-        self.embedding_dim = embedding_dim
+        self._embedding_dim = embedding_dim
         self._encoder = Encoder(3, num_hidden,
                                 num_residual_layers,
                                 num_residual_hidden)
@@ -173,11 +173,14 @@ class QNVAE(nn.Module, ABC):
                                 num_residual_hidden)
 
     def forward(self, x):
-        z = self._encoder(x)
-        z = self._pre_vq_conv(z)
-        loss, quantized, perplexity, encoding = self.vq_vae(z)
+        loss, quantized, perplexity, encoding = self.encode(x)
         x_recon = self._decoder(quantized)
         return loss, x_recon, perplexity, encoding
+
+    def encode(self, x):
+        z = self._encoder(x)
+        z = self._pre_vq_conv(z)
+        return self.vq_vae(z)
 
     def decode_samples(self, encoding_indices):
         batch, _, w, h = encoding_indices.shape
