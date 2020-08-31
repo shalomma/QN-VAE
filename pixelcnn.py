@@ -1,244 +1,139 @@
-from abc import ABC
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 
-class CroppedConv2d(nn.Conv2d, ABC):
-    def __init__(self, *args, **kwargs):
-        super(CroppedConv2d, self).__init__(*args, **kwargs)
-
-    def forward(self, x):
-        x = super(CroppedConv2d, self).forward(x)
-
-        kernel_height, _ = self.kernel_size
-        res = x[:, :, 1:-kernel_height, :]
-        shifted_up_res = x[:, :, :-kernel_height-1, :]
-
-        return res, shifted_up_res
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        try:
+            nn.init.xavier_uniform_(m.weight.data)
+            m.bias.data.fill_(0)
+        except AttributeError:
+            print("Skipping initialization of ", classname)
 
 
-class MaskedConv2d(nn.Conv2d, ABC):
-    def __init__(self, *args, mask_type, data_channels, **kwargs):
-        super(MaskedConv2d, self).__init__(*args, **kwargs)
-
-        assert mask_type in ['A', 'B'], 'Invalid mask type.'
-
-        out_channels, in_channels, height, width = self.weight.size()
-        yc, xc = height // 2, width // 2
-
-        mask = np.zeros(self.weight.size(), dtype=np.float32)
-        mask[:, :, :yc, :] = 1
-        mask[:, :, yc, :xc + 1] = 1
-
-        def c_mask(out_c, in_c):
-            a = (np.arange(out_channels) % data_channels == out_c)[:, None]
-            b = (np.arange(in_channels) % data_channels == in_c)[None, :]
-            return a * b
-
-        for o in range(data_channels):
-            for i in range(o + 1, data_channels):
-                mask[c_mask(o, i), yc, xc] = 0
-
-        if mask_type == 'A':
-            for c in range(data_channels):
-                mask[c_mask(c, c), yc, xc] = 0
-
-        mask = torch.from_numpy(mask).float()
-
-        self.register_buffer('mask', mask)
+class GatedActivation(nn.Module):
+    def __init__(self):
+        super().__init__()
 
     def forward(self, x):
-        self.weight.data *= self.mask
-        x = super(MaskedConv2d, self).forward(x)
-        return x
+        x, y = x.chunk(2, dim=1)
+        return F.tanh(x) * F.sigmoid(y)
 
 
-class CausalBlock(nn.Module, ABC):
-    def __init__(self, in_channels, out_channels, kernel_size, data_channels):
-        super(CausalBlock, self).__init__()
-        self.split_size = out_channels
+class GatedMaskedConv2d(nn.Module):
+    def __init__(self, mask_type, dim, kernel, residual=True, n_classes=10):
+        super().__init__()
+        assert kernel % 2 == 1, print("Kernel size must be odd")
+        self.mask_type = mask_type
+        self.residual = residual
 
-        self.v_conv = CroppedConv2d(in_channels,
-                                    2 * out_channels,
-                                    (kernel_size // 2 + 1, kernel_size),
-                                    padding=(kernel_size // 2 + 1, kernel_size // 2))
-        self.v_fc = nn.Conv2d(in_channels,
-                              2 * out_channels,
-                              (1, 1))
-        self.v_to_h = nn.Conv2d(2 * out_channels,
-                                2 * out_channels,
-                                (1, 1))
-
-        self.h_conv = MaskedConv2d(in_channels,
-                                   2 * out_channels,
-                                   (1, kernel_size),
-                                   mask_type='A',
-                                   data_channels=data_channels,
-                                   padding=(0, kernel_size // 2))
-        self.h_fc = MaskedConv2d(out_channels,
-                                 out_channels,
-                                 (1, 1),
-                                 mask_type='A',
-                                 data_channels=data_channels)
-
-    def forward(self, image):
-        v_out, v_shifted = self.v_conv(image)
-        v_out += self.v_fc(image)
-        v_out_tanh, v_out_sigmoid = torch.split(v_out, self.split_size, dim=1)
-        v_out = torch.tanh(v_out_tanh) * torch.sigmoid(v_out_sigmoid)
-
-        h_out = self.h_conv(image)
-        v_shifted = self.v_to_h(v_shifted)
-        h_out += v_shifted
-        h_out_tanh, h_out_sigmoid = torch.split(h_out, self.split_size, dim=1)
-        h_out = torch.tanh(h_out_tanh) * torch.sigmoid(h_out_sigmoid)
-        h_out = self.h_fc(h_out)
-
-        return v_out, h_out
-
-
-class GatedBlock(nn.Module, ABC):
-    def __init__(self, in_channels, out_channels, kernel_size, data_channels):
-        super(GatedBlock, self).__init__()
-        self.split_size = out_channels
-
-        self.v_conv = CroppedConv2d(in_channels,
-                                    2 * out_channels,
-                                    (kernel_size // 2 + 1, kernel_size),
-                                    padding=(kernel_size // 2 + 1, kernel_size // 2))
-        self.v_fc = nn.Conv2d(in_channels,
-                              2 * out_channels,
-                              (1, 1))
-        self.v_to_h = MaskedConv2d(2 * out_channels,
-                                   2 * out_channels,
-                                   (1, 1),
-                                   mask_type='B',
-                                   data_channels=data_channels)
-
-        self.h_conv = MaskedConv2d(in_channels,
-                                   2 * out_channels,
-                                   (1, kernel_size),
-                                   mask_type='B',
-                                   data_channels=data_channels,
-                                   padding=(0, kernel_size // 2))
-        self.h_fc = MaskedConv2d(out_channels,
-                                 out_channels,
-                                 (1, 1),
-                                 mask_type='B',
-                                 data_channels=data_channels)
-
-        self.h_skip = MaskedConv2d(out_channels,
-                                   out_channels,
-                                   (1, 1),
-                                   mask_type='B',
-                                   data_channels=data_channels)
-
-        self.label_embedding = nn.Embedding(10, 2*out_channels)
-
-    def forward(self, x):
-        v_in, h_in, skip, label = x[0], x[1], x[2], x[3]
-
-        label_embedded = self.label_embedding(label).unsqueeze(2).unsqueeze(3)
-
-        v_out, v_shifted = self.v_conv(v_in)
-        v_out += self.v_fc(v_in)
-        v_out += label_embedded
-        v_out_tanh, v_out_sigmoid = torch.split(v_out, self.split_size, dim=1)
-        v_out = torch.tanh(v_out_tanh) * torch.sigmoid(v_out_sigmoid)
-
-        h_out = self.h_conv(h_in)
-        v_shifted = self.v_to_h(v_shifted)
-        h_out += v_shifted
-        h_out += label_embedded
-        h_out_tanh, h_out_sigmoid = torch.split(h_out, self.split_size, dim=1)
-        h_out = torch.tanh(h_out_tanh) * torch.sigmoid(h_out_sigmoid)
-
-        # skip connection
-        skip = skip + self.h_skip(h_out)
-
-        h_out = self.h_fc(h_out)
-
-        # residual connections
-        h_out = h_out + h_in
-        v_out = v_out + v_in
-
-        return {0: v_out, 1: h_out, 2: skip, 3: label}
-
-
-class PixelCNN(nn.Module, ABC):
-    def __init__(self, hidden_fmaps, levels, hidden_layers, causal_ksize, hidden_ksize, out_hidden_fmaps):
-        super(PixelCNN, self).__init__()
-
-        data_channels = 1
-
-        self.hidden_f_maps = hidden_fmaps
-        self.color_levels = levels
-
-        self.causal_conv = CausalBlock(data_channels,
-                                       hidden_fmaps,
-                                       causal_ksize,
-                                       data_channels=data_channels)
-
-        self.hidden_conv = nn.Sequential(
-            *[GatedBlock(hidden_fmaps, hidden_fmaps, hidden_ksize, data_channels)
-              for _ in range(hidden_layers)]
+        self.class_cond_embedding = nn.Embedding(
+            n_classes, 2 * dim
         )
 
-        self.label_embedding = nn.Embedding(10, self.hidden_f_maps)
+        kernel_shp = (kernel // 2 + 1, kernel)  # (ceil(n/2), n)
+        padding_shp = (kernel // 2, kernel // 2)
+        self.vert_stack = nn.Conv2d(
+            dim, dim * 2,
+            kernel_shp, 1, padding_shp
+        )
 
-        self.out_hidden_conv = MaskedConv2d(hidden_fmaps,
-                                            out_hidden_fmaps,
-                                            (1, 1),
-                                            mask_type='B',
-                                            data_channels=data_channels)
+        self.vert_to_horiz = nn.Conv2d(2 * dim, 2 * dim, 1)
 
-        self.out_conv = MaskedConv2d(out_hidden_fmaps,
-                                     data_channels * levels,
-                                     (1, 1),
-                                     mask_type='B',
-                                     data_channels=data_channels)
+        kernel_shp = (1, kernel // 2 + 1)
+        padding_shp = (0, kernel // 2)
+        self.horiz_stack = nn.Conv2d(
+            dim, dim * 2,
+            kernel_shp, 1, padding_shp
+        )
 
-    def forward(self, image, label):
-        count, data_channels, height, width = image.size()
+        self.horiz_resid = nn.Conv2d(dim, dim, 1)
 
-        v, h = self.causal_conv(image)
+        self.gate = GatedActivation()
 
-        _, _, out, _ = self.hidden_conv({0: v,
-                                         1: h,
-                                         2: image.new_zeros((count, self.hidden_f_maps, height, width),
-                                                            requires_grad=True),
-                                         3: label}).values()
+    def make_causal(self):
+        self.vert_stack.weight.data[:, :, -1].zero_()  # Mask final row
+        self.horiz_stack.weight.data[:, :, :, -1].zero_()  # Mask final column
 
-        label_embedded = self.label_embedding(label).unsqueeze(2).unsqueeze(3)
+    def forward(self, x_v, x_h, h):
+        if self.mask_type == 'A':
+            self.make_causal()
 
-        # add label bias
-        out += label_embedded
-        out = F.relu(out)
-        out = F.relu(self.out_hidden_conv(out))
-        out = self.out_conv(out)
+        h = self.class_cond_embedding(h)
+        h_vert = self.vert_stack(x_v)
+        h_vert = h_vert[:, :, :x_v.size(-1), :]
+        out_v = self.gate(h_vert + h[:, :, None, None])
 
-        out = out.view(count, self.color_levels, data_channels, height, width)
+        h_horiz = self.horiz_stack(x_h)
+        h_horiz = h_horiz[:, :, :, :x_h.size(-2)]
+        v2h = self.vert_to_horiz(h_vert)
 
-        return out
-
-    def sample(self, shape, count, label=None, device='cuda'):
-        channels, height, width = shape
-
-        samples = torch.zeros(count, *shape).to(device)
-        if label is None:
-            labels = torch.randint(high=10, size=(count,)).to(device)
+        out = self.gate(v2h + h_horiz + h[:, :, None, None])
+        if self.residual:
+            out_h = self.horiz_resid(out) + x_h
         else:
-            labels = (label*torch.ones(count)).to(device).long()
+            out_h = self.horiz_resid(out)
 
-        with torch.no_grad():
-            for i in range(height):
-                for j in range(width):
-                    for c in range(channels):
-                        un_normalized_probs = self.forward(samples, labels)
-                        pixel_probs = torch.softmax(un_normalized_probs[:, :, c, i, j], dim=1)
-                        sampled_levels = torch.multinomial(pixel_probs, 1).squeeze().float() / (self.color_levels - 1)
-                        samples[:, c, i, j] = sampled_levels
+        return out_v, out_h
 
-        return samples
+
+class PixelCNN(nn.Module):
+    def __init__(self, input_dim=256, dim=64, n_layers=15, n_classes=10):
+        super().__init__()
+        self.input_dim = input_dim
+        self.dim = dim
+
+        # Create embedding layer to embed input
+        self.embedding = nn.Embedding(input_dim, dim)
+
+        # Building the PixelCNN layer by layer
+        self.layers = nn.ModuleList()
+
+        # Initial block with Mask-A convolution
+        # Rest with Mask-B convolutions
+        for i in range(n_layers):
+            mask_type = 'A' if i == 0 else 'B'
+            kernel = 7 if i == 0 else 3
+            residual = False if i == 0 else True
+
+            self.layers.append(
+                GatedMaskedConv2d(mask_type, dim, kernel, residual, n_classes)
+            )
+
+        # Add the output layer
+        self.output_conv = nn.Sequential(
+            nn.Conv2d(dim, 512, 1),
+            nn.ReLU(True),
+            nn.Conv2d(512, input_dim, 1)
+        )
+
+        self.apply(weights_init)
+
+    def forward(self, x, label):
+        shp = x.size() + (-1, )
+        x = self.embedding(x.view(-1)).view(shp)  # (B, H, W, C)
+        x = x.permute(0, 3, 1, 2)  # (B, C, W, W)
+
+        x_v, x_h = (x, x)
+        for i, layer in enumerate(self.layers):
+            x_v, x_h = layer(x_v, x_h, label)
+
+        return self.output_conv(x_h)
+
+    def generate(self, label, shape=(8, 8), batch_size=64):
+        param = next(self.parameters())
+        x = torch.zeros(
+            (batch_size, *shape),
+            dtype=torch.int64, device=param.device
+        )
+
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                logits = self.forward(x, label)
+                probs = F.softmax(logits[:, :, i, j], -1)
+                x.data[:, i, j].copy_(
+                    probs.multinomial(1).squeeze().data
+                )
+        return x
