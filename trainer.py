@@ -84,9 +84,8 @@ class PriorTrainer(Trainer):
         self.max_norm = None
 
     def step(self, samples, labels):
-        normalized_samples = samples.float() / (self.levels - 1)
-        outputs = self.model(normalized_samples, labels)
-        loss = F.cross_entropy(outputs, samples)
+        outputs = self.model(samples, labels)
+        loss = F.cross_entropy(outputs, samples.long())
         self.metrics['loss'].append(loss.item())
         if self.model.training:
             loss.backward()

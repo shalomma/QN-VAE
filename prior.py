@@ -48,12 +48,12 @@ if __name__ == '__main__':
         transforms.Lambda(lambda image: np.array(image) / params['num_embeddings']),
         transforms.Lambda(lambda image: quantize(image, params['levels'])),
     ])
-
+    discretize = None
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
         loaders = loader.EncodedLoader(root_dir, q, discretize).get(params['batch_size'], pin_memory=False)
-        prior_model = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
+        prior_model = PixelCNN(params['hidden_fmaps'], params['num_embeddings'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
         optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
                                weight_decay=params['weight_decay'])
