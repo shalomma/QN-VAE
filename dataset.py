@@ -11,7 +11,8 @@ class Encoded(data.Dataset):
         self.y = torch.load(os.path.join(root_dir, f'encoded_labels_{q}.pt'), map_location=device)
         self.y = self.y[indices].to(device).long()
         self.data = self.data[indices]
-        self.data = transform(self.data)
+        if transform is not None:
+            self.data = transform(self.data)
         self.data = torch.tensor(self.data).to(device)
 
     def __len__(self):
