@@ -11,7 +11,7 @@ class VectorQuantizer(nn.Module, ABC):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost, quant_noise=1):
         super(VectorQuantizer, self).__init__()
         torch.manual_seed(seed)
-        self.num_embeddings = embedding_dim
+        self._embedding_dim = embedding_dim
         self._num_embeddings = num_embeddings
 
         self.embedding = nn.Embedding(self._num_embeddings, self._embedding_dim)
@@ -183,7 +183,7 @@ class QNVAE(nn.Module, ABC):
         batch, _, w, h = encoding_indices.shape
         encoding_indices = encoding_indices.view(-1, 1).long()
         flattened_size = encoding_indices.shape[0]
-        encodings = torch.zeros(flattened_size, self.vq_vae.num_embeddings, device=encoding_indices.device)
+        encodings = torch.zeros(flattened_size, self.vq_vae._num_embeddings, device=encoding_indices.device)
         encodings.scatter_(1, encoding_indices, 1)
         quantized = torch.matmul(encodings, self.vq_vae.embedding.weight)
         quantized = quantized.view([batch, w, h, self.embedding_dim])
