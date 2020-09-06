@@ -8,7 +8,8 @@ from torchvision.utils import save_image
 def save_model(model, params, prefix, q, directory):
     with open(f'{directory}/{prefix}_params_{q}.pkl', 'wb') as f:
         pickle.dump(params, f)
-    torch.save(model.state_dict(), f'{directory}/{prefix}_{q}.pt')
+    with open(f'{directory}/{prefix}_{q}.pkl', 'wb') as f:
+        torch.save(model.state_dict(), f)
 
 
 def load_model(model_class, prefix, q, directory):
@@ -20,7 +21,9 @@ def load_model(model_class, prefix, q, directory):
     for a in args[1:]:
         params_class[a] = params[a]
     model = model_class(**params_class).to(device)
-    model.load_state_dict(torch.load(f'{directory}/{prefix}_{q}.pt'))
+    with open(f'{directory}/{prefix}_{q}.pt', 'rb') as f:
+        state_dict = torch.load(f, map_location=device)
+        model.load_state_dict(state_dict)
     model.eval()
     return model, params
 
