@@ -1,6 +1,7 @@
 import os
+from datetime import datetime
+
 import numpy as np
-import argparse
 import torch
 from torch import optim
 import torchvision.transforms as transforms
@@ -14,15 +15,15 @@ from utils import save_model
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('timestamp', type=str, help='models timestamp')
-    args = parser.parse_args()
+    timestamp = str(datetime.now())[:-7]
+    timestamp = timestamp.replace('-', '_').replace(' ', '_').replace(':', '_')
+    os.makedirs(f'models/{timestamp}')
 
-    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{args.timestamp}/training_prior.log'},
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{timestamp}/training_prior.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
 
-    root_dir = os.path.join('models', args.timestamp)
+    root_dir = os.path.join('models', timestamp)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(device)
 
@@ -66,4 +67,4 @@ if __name__ == '__main__':
     trainer.run()
     params['commit'] = Repo('./').head.commit.hexsha[:7]
     params['loss'] = trainer.metrics['loss']
-    save_model(prior_model, params, 'pixelcnn', q=0, directory=f'models/{args.timestamp}')
+    save_model(prior_model, params, 'pixelcnn', q=0, directory=f'models/{timestamp}')
