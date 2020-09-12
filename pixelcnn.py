@@ -168,10 +168,8 @@ class GatedBlock(nn.Module, ABC):
 
 
 class PixelCNN(nn.Module, ABC):
-    def __init__(self, hidden_fmaps, levels, hidden_layers, causal_ksize, hidden_ksize, out_hidden_fmaps):
+    def __init__(self, data_channels, hidden_fmaps, levels, hidden_layers, causal_ksize, hidden_ksize, out_hidden_fmaps):
         super(PixelCNN, self).__init__()
-
-        data_channels = 1
 
         self.hidden_f_maps = hidden_fmaps
         self.color_levels = levels
