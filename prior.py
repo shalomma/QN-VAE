@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     loaders = loader.CIFAR10Loader(discretize).get(params['batch_size'], pin_memory=False)
     prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
-                           params['num_embeddings'], params['hidden_layers'],
+                           params['levels'], params['hidden_layers'],
                            params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
     optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
                            weight_decay=params['weight_decay'])

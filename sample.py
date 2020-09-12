@@ -14,5 +14,5 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model_pixelcnn, _ = load_model(PixelCNN, 'pixelcnn', q=0, directory=directory)
-    encoding = model_pixelcnn.sample((1, 8, 8), 64, label=None, device=device)
+    encoding = model_pixelcnn.sample((3, 32, 32), 1, label=None, device=device)
     save_samples(encoding, directory, f'encoding.png')

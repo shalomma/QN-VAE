@@ -1,11 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.backends import cudnn
+from utils import save_samples
 
 
 cudnn.deterministic = True
@@ -45,6 +45,8 @@ class Trainer(ABC):
                         to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
             if i % 100 == 0:
                 self.log(to_print)
+                encoding = self.model.sample((3, 32, 32), 1, label=None, device=self.device)
+                save_samples(encoding, './models/', f'encoding_{i}.png')
 
     @abstractmethod
     def step(self, samples, labels):
