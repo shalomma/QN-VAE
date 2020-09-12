@@ -45,7 +45,7 @@ class Trainer(ABC):
                         to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
             if i % 100 == 0:
                 self.log(to_print)
-                encoding = self.model.sample((3, 32, 32), 1, label=None, device=self.device)
+                encoding = self.model.sample((3, 32, 32), 4, label=None, device=self.device)
                 save_samples(encoding, './models/', f'encoding_{i}.png')
 
     @abstractmethod
