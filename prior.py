@@ -29,6 +29,7 @@ if __name__ == '__main__':
     params = {
         'batch_size': 256,
         'batches': 5000,
+        'data_channels': 3,
         'hidden_fmaps': 30,
         'levels': 10,
         'hidden_layers': 6,
@@ -41,29 +42,28 @@ if __name__ == '__main__':
         'num_embeddings': 512
     }
 
-    def quantize(image, levels):
-        return np.digitize(image, np.arange(levels) / levels) - 1
+    def quantize(image):
+        return np.digitize(np.array(image) / 255, np.arange(params['levels']) / params['levels']) - 1
 
     discretize = transforms.Compose([
-        transforms.Lambda(lambda image: np.array(image) / params['num_embeddings']),
-        transforms.Lambda(lambda image: quantize(image, params['levels'])),
+        transforms.Lambda(quantize),
+        transforms.ToTensor(),
+        transforms.Lambda(lambda image: image.float())
     ])
-    discretize = None
-    quant_noise_probs = [0.25, 0.5, 0.75, 1]
-    for q in quant_noise_probs:
-        log.info(f'Train q={q}')
-        loaders = loader.EncodedLoader(root_dir, q, discretize).get(params['batch_size'], pin_memory=False)
-        prior_model = PixelCNN(params['hidden_fmaps'], params['num_embeddings'], params['hidden_layers'],
-                               params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
-        optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
-                               weight_decay=params['weight_decay'])
-        scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
-                                                10 * params['learning_rate'], cycle_momentum=False)
-        trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
-        trainer.max_norm = params['max_norm']
-        trainer.levels = params['levels']
-        trainer.batches = params['batches']
-        trainer.run()
-        params['commit'] = Repo('./').head.commit.hexsha[:7]
-        params['loss'] = trainer.metrics['loss']
-        save_model(prior_model, params, 'pixelcnn', q, f'models/{args.timestamp}')
+
+    loaders = loader.CIFAR10Loader(discretize).get(params['batch_size'], pin_memory=False)
+    prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
+                           params['num_embeddings'], params['hidden_layers'],
+                           params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
+    optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
+                           weight_decay=params['weight_decay'])
+    scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
+                                            10 * params['learning_rate'], cycle_momentum=False)
+    trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
+    trainer.max_norm = params['max_norm']
+    trainer.levels = params['levels']
+    trainer.batches = params['batches']
+    trainer.run()
+    params['commit'] = Repo('./').head.commit.hexsha[:7]
+    params['loss'] = trainer.metrics['loss']
+    save_model(prior_model, params, 'pixelcnn', q=0, directory=f'models/{args.timestamp}')

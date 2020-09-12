@@ -22,14 +22,10 @@ class Loader:
 
 
 class CIFAR10Loader(Loader):
-    def __init__(self):
+    def __init__(self, transform):
         super(CIFAR10Loader, self).__init__()
-        compose = transforms.Compose([transforms.ToTensor(),
-                                      transforms.Normalize(mean=(0.5, 0.5, 0.5),
-                                                           std=(1.0, 1.0, 1.0))
-                                      ])
-        self.data['train'] = datasets.CIFAR10(root="data", train=True, download=True, transform=compose)
-        self.data['val'] = datasets.CIFAR10(root="data", train=False, download=True, transform=compose)
+        self.data['train'] = datasets.CIFAR10(root="data", train=True, download=True, transform=transform)
+        self.data['val'] = datasets.CIFAR10(root="data", train=False, download=True, transform=transform)
 
 
 class MNISTLoader(Loader):
