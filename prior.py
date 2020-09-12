@@ -48,8 +48,7 @@ if __name__ == '__main__':
 
     discretize = transforms.Compose([
         transforms.Lambda(quantize),
-        transforms.ToTensor(),
-        transforms.Lambda(lambda image: image.float())
+        transforms.ToTensor()
     ])
 
     loaders = loader.CIFAR10Loader(discretize).get(params['batch_size'], pin_memory=False)
