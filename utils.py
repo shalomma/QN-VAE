@@ -8,7 +8,7 @@ from torchvision.utils import save_image
 def save_model(model, params, prefix, q, directory):
     with open(f'{directory}/{prefix}_params_{q}.pkl', 'wb') as f:
         pickle.dump(params, f)
-    with open(f'{directory}/{prefix}_{q}.pkl', 'wb') as f:
+    with open(f'{directory}/{prefix}_{q}.pt', 'wb') as f:
         torch.save(model.state_dict(), f)
 
 
