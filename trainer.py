@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.backends import cudnn
 from utils import save_samples
-from tqdm import tqdm
 
 
 cudnn.deterministic = True
@@ -35,7 +34,7 @@ class Trainer(ABC):
             to_print = f'Epoch {i:04}:'
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
-                for data in tqdm(self.loader[phase]):
+                for data in self.loader[phase]:
                     samples, labels = data
                     samples = samples.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
