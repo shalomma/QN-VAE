@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.backends import cudnn
 from utils import save_samples
+from tqdm import tqdm
 
 
 cudnn.deterministic = True
@@ -19,34 +20,27 @@ class Trainer(ABC):
         self.optimizer = optimizer
         self.loader = loader
         self.scheduler = scheduler
-        self.batches = 50
+        self.root_dir = './'
+        self.epochs = 50
         self.phases = ['train', 'val']
         self.metrics = dict()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.log = logging.getLogger(__name__).info
 
     def run(self):
-        for i in range(self.batches):
-            to_print = f'Batch {i:04}:'
+        for i in range(self.epochs):
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
-                samples, labels = next(iter(self.loader[phase]))
-                samples = samples.to(self.device, non_blocking=True)
-                labels = labels.to(self.device, non_blocking=True)
-                self.optimizer.zero_grad()
-                self.step(samples, labels)
+                for data in tqdm(self.loader[phase], desc=f'Epoch {i}/{self.epochs}'):
+                    samples, labels = data
+                    samples = samples.to(self.device, non_blocking=True)
+                    labels = labels.to(self.device, non_blocking=True)
+                    self.optimizer.zero_grad()
+                    self.step(samples, labels)
 
-                if phase == 'train' and self.scheduler is not None:
-                    self.scheduler.step()
-
-                to_print += f'\t{phase}: '
-                for metric, values in self.metrics.items():
-                    if values:
-                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
-            if i % 100 == 0:
-                self.log(to_print)
-                encoding = self.model.sample((3, 32, 32), 4, label=None, device=self.device)
-                save_samples(encoding, './models/', f'encoding_{i}.png')
+            self.scheduler.step()
+            encoding = self.model.sample((3, 32, 32), 8, label=None, device=self.device)
+            save_samples(encoding, self.root_dir, f'encoding_{i}.png')
 
     @abstractmethod
     def step(self, samples, labels):
