@@ -47,7 +47,8 @@ class Trainer(ABC):
                     if values:
                         to_print += f'{metric}: {values[-1]:.4f}  '
 
-            self.scheduler.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
             self.log(to_print)
             self.evaluate()
 
