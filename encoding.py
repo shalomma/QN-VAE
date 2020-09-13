@@ -1,5 +1,6 @@
 import argparse
 import torch
+from torchvision import transforms
 
 import loader
 from qnvae import QNVAE
@@ -18,8 +19,10 @@ if __name__ == '__main__':
     qn_model = dict()
     for q_ in quant_noise_probs:
         qn_model[q_], _ = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
-
-    loaders = loader.CIFAR10Loader().get(batch_size)
+    transform = transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
+                                    ])
+    loaders = loader.CIFAR10Loader(transform).get(batch_size)
     for q_, model in qn_model.items():
         print(f'Encoding using {q_} QN-VAE')
         model.eval()
