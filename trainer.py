@@ -19,7 +19,6 @@ class Trainer(ABC):
         self.optimizer = optimizer
         self.loader = loader
         self.scheduler = scheduler
-        self.root_dir = './'
         self.epochs = 50
         self.phases = ['train', 'val']
         self.metrics = {
@@ -89,6 +88,7 @@ class PriorTrainer(Trainer):
             'train': {'loss': []},
             'val': {'loss': []}
         }
+        self.samples_dir = './'
         self.levels = None
         self.max_norm = None
         self.channels = 1
@@ -106,4 +106,4 @@ class PriorTrainer(Trainer):
 
     def evaluate(self, epoch):
         encoding = self.model.sample((self.channels, 32, 32), 8, label=None, device=self.device)
-        save_samples(encoding, self.root_dir, f'encoding_{epoch}.png')
+        save_samples(encoding, self.samples_dir, f'encoding_{epoch}.png')
