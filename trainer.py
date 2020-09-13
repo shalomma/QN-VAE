@@ -43,9 +43,9 @@ class Trainer(ABC):
                     self.step(phase, samples, labels)
 
                 to_print += f'\t{phase}: '
-                for metric, values in self.metrics.items():
+                for metric, values in self.metrics[phase].items():
                     if values:
-                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
+                        to_print += f'{metric}: {values[-1]:.4f}  '
 
             self.scheduler.step()
             self.log(to_print)
