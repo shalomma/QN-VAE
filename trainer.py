@@ -22,7 +22,7 @@ class Trainer(ABC):
         self.scheduler = scheduler
         self.root_dir = './'
         self.epochs = 50
-        self.phases = ['train']
+        self.phases = ['train', 'val']
         self.metrics = {
             'train': dict(),
             'val': dict(),
