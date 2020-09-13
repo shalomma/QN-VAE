@@ -26,8 +26,8 @@ if __name__ == '__main__':
     log = logging.getLogger(__name__)
 
     params = {
-        'batch_size': 256,
-        'epochs': 40,
+        'batch_size': 1024,
+        'epochs': 50,
         'num_hidden': 128,
         'num_residual_hidden': 32,
         'num_residual_layers': 2,
