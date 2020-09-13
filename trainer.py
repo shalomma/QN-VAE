@@ -22,7 +22,7 @@ class Trainer(ABC):
         self.scheduler = scheduler
         self.root_dir = './'
         self.epochs = 50
-        self.phases = ['train', 'val']
+        self.phases = ['train']
         self.metrics = dict()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.log = logging.getLogger(__name__).info
