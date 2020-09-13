@@ -35,7 +35,7 @@ class Trainer(ABC):
             to_print = f'Epoch {i:04}:'
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
-                for data in tqdm(self.loader[phase], desc=f'Epoch {i}/{self.epochs}'):
+                for data in tqdm(self.loader[phase]):
                     samples, labels = data
                     samples = samples.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
@@ -45,7 +45,7 @@ class Trainer(ABC):
                 to_print += f'\t{phase}: '
                 for metric, values in self.metrics[phase].items():
                     if values:
-                        to_print += f'{metric}: {values[-1]:.4f}  '
+                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
 
             if self.scheduler is not None:
                 self.scheduler.step()
