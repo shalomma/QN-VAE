@@ -28,8 +28,8 @@ if __name__ == '__main__':
     log.info(device)
 
     params = {
-        'batch_size': 256,
-        'batches': 5000,
+        'batch_size': 32,
+        'epochs': 5000,
         'data_channels': 3,
         'hidden_fmaps': 120,
         'levels': 10,
@@ -62,7 +62,8 @@ if __name__ == '__main__':
     trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
     trainer.max_norm = params['max_norm']
     trainer.levels = params['levels']
-    trainer.batches = params['batches']
+    trainer.epochs = params['epochs']
+    trainer.root_dir = root_dir
     trainer.run()
     params['commit'] = Repo('./').head.commit.hexsha[:7]
     params['loss'] = trainer.metrics['loss']
