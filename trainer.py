@@ -15,7 +15,7 @@ cudnn.fastest = True
 
 
 class Trainer(ABC):
-    def __init__(self, model, optimizer, loader, scheduler=None):
+    def __init__(self, model, optimizer, loader, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.loader = loader
@@ -23,12 +23,16 @@ class Trainer(ABC):
         self.root_dir = './'
         self.epochs = 50
         self.phases = ['train']
-        self.metrics = dict()
+        self.metrics = {
+            'train': dict(),
+            'val': dict(),
+        }
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.log = logging.getLogger(__name__).info
 
     def run(self):
         for i in range(self.epochs):
+            to_print = f'Epoch {i:04}:'
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
                 for data in tqdm(self.loader[phase], desc=f'Epoch {i}/{self.epochs}'):
@@ -36,35 +40,43 @@ class Trainer(ABC):
                     samples = samples.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
                     self.optimizer.zero_grad()
-                    self.step(samples, labels)
+                    self.step(phase, samples, labels)
+
+                to_print += f'\t{phase}: '
+                for metric, values in self.metrics.items():
+                    if values:
+                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
 
             self.scheduler.step()
-            encoding = self.model.sample((3, 32, 32), 8, label=None, device=self.device)
-            save_samples(encoding, self.root_dir, f'encoding_{i}.png')
+            self.log(to_print)
+            self.evaluate()
 
     @abstractmethod
-    def step(self, samples, labels):
+    def step(self, phase, samples, labels):
+        pass
+
+    def evaluate(self):
         pass
 
 
 class VAETrainer(Trainer):
-    def __init__(self, model, optimizer, loader, scheduler):
+    def __init__(self, model, optimizer, loader, scheduler=None):
         super(VAETrainer, self).__init__(model, optimizer, loader, scheduler)
         self.data_variance = np.var(loader['train'].dataset.data / 255.0)
         self.metrics = {
-            'loss': [],
-            'perplexity': []
+            'train': {'loss': [], 'perplexity': []},
+            'val': {'loss': [], 'perplexity': []}
         }
 
-    def step(self, samples, labels):
+    def step(self, phase, samples, labels):
         vq_loss, data_recon, perplexity, encoding = self.model(samples)
         recon_error = F.mse_loss(data_recon, samples) / self.data_variance
-        self.metrics['loss'].append(recon_error.item())
+        self.metrics[phase]['loss'].append(recon_error.item())
         loss = recon_error
         if vq_loss is not None:
             loss += vq_loss
         if perplexity is not None:
-            self.metrics['perplexity'].append(perplexity.item())
+            self.metrics[phase]['perplexity'].append(perplexity.item())
         if self.model.training:
             loss.backward()
             self.optimizer.step()
@@ -74,17 +86,22 @@ class PriorTrainer(Trainer):
     def __init__(self, model, optimizer, loader, scheduler):
         super(PriorTrainer, self).__init__(model, optimizer, loader, scheduler)
         self.metrics = {
-            'loss': []
+            'train': {'loss': []},
+            'val': {'loss': []}
         }
         self.levels = None
         self.max_norm = None
 
-    def step(self, samples, labels):
+    def step(self, phase, samples, labels):
         normalized_samples = samples.float() / (self.levels - 1)
         outputs = self.model(normalized_samples, labels)
         loss = F.cross_entropy(outputs, samples.long())
-        self.metrics['loss'].append(loss.item())
+        self.metrics[phase]['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
             self.optimizer.step()
+
+    def evaluate(self):
+        encoding = self.model.sample((3, 32, 32), 8, label=None, device=self.device)
+        save_samples(encoding, self.root_dir, f'encoding_{i}.png')

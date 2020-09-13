@@ -4,16 +4,15 @@ import torch
 from torch import optim
 from datetime import datetime
 from git import Repo
+from torchvision import transforms
 
 import loader
 from qnvae import QNVAE, AE
 from trainer import VAETrainer
 from utils import save_model
 
-
 seed = 14
 torch.manual_seed(seed)
-
 
 if __name__ == '__main__':
     if not os.path.exists('models'):
@@ -25,10 +24,10 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{timestamp}/training.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
-    
+
     params = {
         'batch_size': 256,
-        'batches': 2000,
+        'epochs': 40,
         'num_hidden': 128,
         'num_residual_hidden': 32,
         'num_residual_layers': 2,
@@ -51,21 +50,19 @@ if __name__ == '__main__':
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],
                             quant_noise=q).to(device)
-
-    loaders = loader.CIFAR10Loader().get(params['batch_size'])
+    transform = transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
+                                    ])
+    loaders = loader.CIFAR10Loader(transform).get(params['batch_size'])
 
     for q, model in qn_model.items():
         log.info(f'Train q={q}')
-        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'],
-                               weight_decay=params['weight_decay'])
-        scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
-                                                10 * params['learning_rate'], cycle_momentum=False)
-        trainer = VAETrainer(model, optimizer, loaders, scheduler)
-        trainer.batches = params['batches']
+        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
+        trainer = VAETrainer(model, optimizer, loaders)
+        trainer.epochs = params['epochs']
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
-        params['loss'] = trainer.metrics['loss']
-        params['perplexity'] = trainer.metrics['perplexity']
+        params['metrics'] = trainer.metrics
         params['quant_noise'] = q
         save_model(model, params, 'qnvae', q, f'models/{timestamp}')
 
