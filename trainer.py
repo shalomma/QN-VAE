@@ -30,8 +30,8 @@ class Trainer(ABC):
         self.log = logging.getLogger(__name__).info
 
     def run(self):
-        for i in range(self.epochs):
-            to_print = f'Epoch {i:04}:'
+        for e in range(self.epochs):
+            to_print = f'Epoch {e:04}:'
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
                 for data in self.loader[phase]:
@@ -49,13 +49,13 @@ class Trainer(ABC):
             if self.scheduler is not None:
                 self.scheduler.step()
             self.log(to_print)
-            self.evaluate()
+            self.evaluate(e)
 
     @abstractmethod
     def step(self, phase, samples, labels):
         pass
 
-    def evaluate(self):
+    def evaluate(self, epoch):
         pass
 
 
@@ -102,6 +102,6 @@ class PriorTrainer(Trainer):
             nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
             self.optimizer.step()
 
-    def evaluate(self):
+    def evaluate(self, epoch):
         encoding = self.model.sample((3, 32, 32), 8, label=None, device=self.device)
-        save_samples(encoding, self.root_dir, f'encoding_{i}.png')
+        save_samples(encoding, self.root_dir, f'encoding_{epoch}.png')
