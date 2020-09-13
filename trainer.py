@@ -91,6 +91,7 @@ class PriorTrainer(Trainer):
         }
         self.levels = None
         self.max_norm = None
+        self.channels = 1
 
     def step(self, phase, samples, labels):
         normalized_samples = samples.float() / (self.levels - 1)
@@ -99,9 +100,10 @@ class PriorTrainer(Trainer):
         self.metrics[phase]['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
-            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
+            if self.max_norm is not None:
+                nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.max_norm)
             self.optimizer.step()
 
     def evaluate(self, epoch):
-        encoding = self.model.sample((3, 32, 32), 8, label=None, device=self.device)
+        encoding = self.model.sample((self.channels, 32, 32), 8, label=None, device=self.device)
         save_samples(encoding, self.root_dir, f'encoding_{epoch}.png')
