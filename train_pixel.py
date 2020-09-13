@@ -1,54 +1,69 @@
+import os
+from datetime import datetime
+
+import numpy as np
 import torch
 from torch import optim
 import torchvision.transforms as transforms
-import numpy as np
 import logging.config
+from git import Repo
 
 import loader
 from pixelcnn import PixelCNN
 from trainer import PriorTrainer
-from sample import save_samples
+from utils import save_model
 
 
 if __name__ == '__main__':
-    logging.config.fileConfig('logging.ini', defaults={'logfile': f'training_pixelcnn.log'},
+    timestamp = str(datetime.now())[:-7]
+    timestamp = timestamp.replace('-', '_').replace(' ', '_').replace(':', '_')
+    os.makedirs(f'models/{timestamp}')
+
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{timestamp}/training_pixel.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
+
+    root_dir = os.path.join('models', timestamp)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(device)
 
     params = {
-        'batch_size': 256,
-        'batches': 3000,
-        'hidden_fmaps': 30,
-        'levels': 2,
+        'batch_size': 32,
+        'epochs': 5000,
+        'data_channels': 3,
+        'hidden_fmaps': 120,
+        'levels': 10,
         'hidden_layers': 6,
         'causal_ksize': 7,
         'hidden_ksize': 7,
-        'out_hidden_fmaps': 10,
+        'out_hidden_fmaps': 60,
         'max_norm': 1.,
         'learning_rate': 1e-4,
         'weight_decay': 1e-4,
         'num_embeddings': 512
     }
 
-    def quantize(image, levels): return np.digitize(image, np.arange(levels) / levels) - 1
-    to_rgb = transforms.Compose([
-        transforms.Lambda(lambda image: quantize(image, params['levels'])),
-        transforms.ToTensor(),
-        # transforms.Lambda(lambda image_tensor: image_tensor.repeat(3, 1, 1))
+    def quantize(image):
+        return np.digitize(np.array(image) / 255, np.arange(params['levels']) / params['levels']) - 1
+
+    discretize = transforms.Compose([
+        transforms.Lambda(quantize),
+        transforms.ToTensor()
     ])
 
-    loaders = loader.MNISTLoader(to_rgb).get(params['batch_size'], pin_memory=False)
-    model_pixelcnn = PixelCNN(params['hidden_fmaps'], params['levels'], params['hidden_layers'],
-                              params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
-    optimizer = optim.Adam(model_pixelcnn.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
+    loaders = loader.CIFAR10Loader(discretize).get(params['batch_size'], pin_memory=False)
+    prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
+                           params['levels'], params['hidden_layers'],
+                           params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
+    optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
     scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
                                             10 * params['learning_rate'], cycle_momentum=False)
-    trainer = PriorTrainer(model_pixelcnn, optimizer, loaders, scheduler)
-    trainer.levels = params['levels']
-    trainer.batches = params['batches']
+    trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
     trainer.max_norm = params['max_norm']
+    trainer.levels = params['levels']
+    trainer.epochs = params['epochs']
+    trainer.root_dir = root_dir
     trainer.run()
-    samples = model_pixelcnn.sample((1, 28, 28), 16, label=None, device=device)
-    save_samples(samples, './', f'samples.png')
+    params['commit'] = Repo('./').head.commit.hexsha[:7]
+    params['loss'] = trainer.metrics['loss']
+    save_model(prior_model, params, 'pixelcnn', q=0, directory=f'models/{timestamp}')
