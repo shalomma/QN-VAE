@@ -17,6 +17,7 @@ from utils import save_model, load_model
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('timestamp', type=str, help='models timestamp')
+    parser.add_argument("--reload", dest='reload', help='reload weights', action='store_true')
     args = parser.parse_args()
 
     logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{args.timestamp}/training_prior.log'},
@@ -57,6 +58,10 @@ if __name__ == '__main__':
         prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
                                params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
+        if args.reload:
+            with open(f'{save_dir}/pixelcnn_{q}.pt', 'rb') as f:
+                state_dict = torch.load(f, map_location=device)
+                prior_model.load_state_dict(state_dict)
         optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
                                weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
