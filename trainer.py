@@ -92,13 +92,16 @@ class PriorTrainer(Trainer):
         self.levels = None
         self.max_norm = None
         self.channels = 1
-        self.decoder = None
+        self.qnvae = None
+        self.transform = None
         self.q = 0.
 
     def step(self, phase, samples, labels):
-        normalized_samples = samples.float() / (self.levels - 1)
-        outputs = self.model(normalized_samples, labels)
-        loss = F.cross_entropy(outputs, samples.long())
+        encoding = self.qnvae.encode_images(samples)
+        encoding = self.transform(encoding)
+        normalized = encoding.float() / (self.levels - 1)
+        outputs = self.model(normalized, labels)
+        loss = F.cross_entropy(outputs, encoding.long())
         self.metrics[phase]['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
@@ -110,5 +113,5 @@ class PriorTrainer(Trainer):
         encoding = self.model.sample((1, 8, 8), 4, label=None, device=self.device)
         save_samples(encoding, self.samples_dir, f'latent_{self.q}_{epoch}.png')
         encoding = (encoding * self.levels).long()
-        decoded = self.decoder.decode_samples(encoding) + 0.5
+        decoded = self.qnvae.decode_samples(encoding) + 0.5
         save_samples(decoded, self.samples_dir, f'decoded_{self.q}_{epoch}.png')

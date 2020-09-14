@@ -43,17 +43,17 @@ if __name__ == '__main__':
     }
     _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=save_dir)
 
-    def quantize(image):
-        return np.digitize(image, np.arange(params['levels']) / params['levels']) - 1
+    transform = transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))])
+    loaders = loader.CIFAR10Loader(transform).get(params['batch_size'])
 
-    discretize = transforms.Compose([
-        transforms.Lambda(lambda image: np.array(image) / params_qnvae['num_embeddings']),
-        transforms.Lambda(lambda image: quantize(image)),
-    ])
+    def quantize(encoding):
+        encoding = encoding / float(params_qnvae['num_embeddings'])
+        return torch.bucketize(encoding, torch.arange(params['levels']) / params['levels']) - 1
+
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
-        loaders = loader.EncodedLoader(save_dir, q, discretize).get(params['batch_size'], pin_memory=False)
         prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
                                params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
@@ -71,7 +71,8 @@ if __name__ == '__main__':
         trainer.levels = params['levels']
         trainer.epochs = params['epochs']
         trainer.samples_dir = save_dir
-        trainer.decoder = qnvae
+        trainer.qnvae = qnvae
+        trainer.transform = quantize
         trainer.q = q
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
