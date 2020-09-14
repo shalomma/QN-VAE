@@ -8,9 +8,10 @@ import logging.config
 from git import Repo
 
 import loader
+from qnvae import QNVAE
 from pixelcnn import PixelCNN
 from trainer import PriorTrainer
-from utils import save_model
+from utils import save_model, load_model
 
 
 if __name__ == '__main__':
@@ -31,7 +32,6 @@ if __name__ == '__main__':
         'epochs': 10,
         'data_channels': 1,
         'hidden_fmaps': 120,
-        'levels': 30,
         'hidden_layers': 6,
         'causal_ksize': 7,
         'hidden_ksize': 7,
@@ -39,14 +39,15 @@ if __name__ == '__main__':
         'max_norm': 1.,
         'learning_rate': 1e-4,
         'weight_decay': 1e-4,
-        'num_embeddings': 512
     }
+    _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=save_dir)
+    params['levels'] = params_qnvae['num_embeddings']
 
     def quantize(image):
         return np.digitize(image, np.arange(params['levels']) / params['levels']) - 1
 
     discretize = transforms.Compose([
-        transforms.Lambda(lambda image: np.array(image) / params['num_embeddings']),
+        transforms.Lambda(lambda image: np.array(image) / params['levels']),
         transforms.Lambda(lambda image: quantize(image)),
     ])
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         log.info(f'Train q={q}')
         loaders = loader.EncodedLoader(save_dir, q, discretize).get(params['batch_size'], pin_memory=False)
         prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
-                               params['num_embeddings'], params['hidden_layers'],
+                               params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
         optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
                                weight_decay=params['weight_decay'])
