@@ -42,13 +42,12 @@ if __name__ == '__main__':
         'weight_decay': 1e-4,
     }
     _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=save_dir)
-    params['levels'] = params_qnvae['num_embeddings']
 
     def quantize(image):
         return np.digitize(image, np.arange(params['levels']) / params['levels']) - 1
 
     discretize = transforms.Compose([
-        transforms.Lambda(lambda image: np.array(image) / params['levels']),
+        transforms.Lambda(lambda image: np.array(image) / params_qnvae['num_embeddings']),
         transforms.Lambda(lambda image: quantize(image)),
     ])
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
