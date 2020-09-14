@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     def quantize(encoding):
         encoding = encoding / float(params_qnvae['num_embeddings'])
-        return torch.bucketize(encoding, torch.arange(params['levels']) / params['levels']) - 1
+        return torch.bucketize(encoding, torch.arange(params['levels']) / float(params['levels'])) - 1
 
     quant_noise_probs = [0.25, 0.5, 0.75, 1]
     for q in quant_noise_probs:

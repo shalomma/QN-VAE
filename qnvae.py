@@ -182,8 +182,9 @@ class QNVAE(nn.Module, ABC):
     def encode_images(self, x):
         z = self._encoder(x)
         z = self._pre_vq_conv(z)
-        loss, quantized, perplexity, encoding = self.vq_vae(z)
-        return encoding
+        _, _, _, encoding = self.vq_vae(z)
+        batch, h, w = encoding.shape
+        return encoding.view(batch, 1, h, w)
 
     def decode_samples(self, encoding_indices):
         batch, _, w, h = encoding_indices.shape
