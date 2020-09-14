@@ -6,7 +6,7 @@ import torch.utils.data as data
 class Encoded(data.Dataset):
     def __init__(self, root_dir, q, indices, transform=None):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.data = torch.load(os.path.join(root_dir, f'encoded_{q}.pt'), map_location=device)
+        self.data = torch.load(os.path.join(root_dir, f'encoded_data_{q}.pt'), map_location=device)
         self.data = self.data.view(-1, 1, 8, 8).cpu().numpy()
         self.y = torch.load(os.path.join(root_dir, f'encoded_labels_{q}.pt'), map_location=device)
         self.y = self.y[indices].to(device).long()

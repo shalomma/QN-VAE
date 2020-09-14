@@ -26,13 +26,13 @@ if __name__ == '__main__':
     for q_, model in qn_model.items():
         print(f'Encoding using {q_} QN-VAE')
         model.eval()
-        encode_dataset = torch.tensor([]).to(device)
-        labels_dataset = torch.tensor([]).to(device)
+        encode_dataset = torch.tensor([]).long().to(device)
+        labels_dataset = torch.tensor([]).long().to(device)
         for phase in ['train', 'val']:
             for samples, labels in loaders[phase]:
                 samples, labels = samples.to(device), labels.to(device)
                 _, _, _, encoding = model(samples)
-                encode_dataset = torch.cat((encode_dataset, encoding.float()))
-                labels_dataset = torch.cat((labels_dataset, labels.float()))
-        torch.save(encode_dataset, f'./models/{args.timestamp}/encoded_{q_}.pt')
+                encode_dataset = torch.cat((encode_dataset, encoding))
+                labels_dataset = torch.cat((labels_dataset, labels))
+        torch.save(encode_dataset, f'./models/{args.timestamp}/encoded_data_{q_}.pt')
         torch.save(labels_dataset, f'./models/{args.timestamp}/encoded_labels_{q_}.pt')
