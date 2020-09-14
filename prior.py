@@ -31,6 +31,7 @@ if __name__ == '__main__':
     params = {
         'batch_size': 32,
         'epochs': 50,
+        'levels': 100,
         'data_channels': 1,
         'hidden_fmaps': 120,
         'hidden_layers': 6,
