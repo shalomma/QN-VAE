@@ -92,6 +92,8 @@ class PriorTrainer(Trainer):
         self.levels = None
         self.max_norm = None
         self.channels = 1
+        self.decoder = None
+        self.q = 0.
 
     def step(self, phase, samples, labels):
         normalized_samples = samples.float() / (self.levels - 1)
@@ -105,5 +107,8 @@ class PriorTrainer(Trainer):
             self.optimizer.step()
 
     def evaluate(self, epoch):
-        encoding = self.model.sample((self.channels, 32, 32), 8, label=None, device=self.device)
-        save_samples(encoding, self.samples_dir, f'encoding_{epoch}.png')
+        encoding = self.model.sample((1, 8, 8), 8, label=None, device=self.device)
+        save_samples(encoding, self.samples_dir, f'latent_{self.q}_{epoch}.png')
+        encoding = (encoding * self.levels).long()
+        decoded = self.decoder.decode_samples(encoding) + 0.5
+        save_samples(decoded, self.samples_dir, f'decoded_{self.q}_{epoch}.png')

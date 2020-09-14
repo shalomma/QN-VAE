@@ -61,11 +61,14 @@ if __name__ == '__main__':
                                weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
                                                 10 * params['learning_rate'], cycle_momentum=False)
+        qnvae, params_qnvae = load_model(QNVAE, 'qnvae', q=q, directory=save_dir)
         trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
         trainer.max_norm = params['max_norm']
         trainer.levels = params['levels']
         trainer.epochs = params['epochs']
         trainer.samples_dir = save_dir
+        trainer.decoder = qnvae
+        trainer.q = q
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]
         params['metrics'] = trainer.metrics

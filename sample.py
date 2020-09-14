@@ -22,5 +22,5 @@ if __name__ == '__main__':
         save_samples(encoding, directory, f'latent_{q_}.png')
         encoding = (encoding * params['levels']).long()
         model_qnvae, _ = load_model(QNVAE, 'qnvae', q_, directory)
-        decoded = model_qnvae.decode_samples(encoding)
+        decoded = model_qnvae.decode_samples(encoding) + 0.5
         save_samples(decoded, directory, f'decoded_{q_}.png')
