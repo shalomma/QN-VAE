@@ -44,12 +44,12 @@ if __name__ == '__main__':
     log.info(device)
 
     qn_model = dict()
-    qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
-                     params['num_residual_hidden'], params['embedding_dim']).to(device)
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],
                             quant_noise=q).to(device)
+    qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
+                     params['num_residual_hidden'], params['embedding_dim']).to(device)
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
                                     ])
