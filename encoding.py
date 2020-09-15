@@ -1,5 +1,6 @@
-import argparse
+import glob
 import torch
+import argparse
 from torchvision import transforms
 
 import loader
@@ -13,12 +14,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    load_dir = f'./models/{args.timestamp}'
     batch_size = 1024
-    quant_noise_probs = [0.25, 0.5, 0.75, 1]
+    quant_noise_probs = [float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')]
+    quant_noise_probs = sorted([q for q in quant_noise_probs if q != 0.0])
     qn_model = dict()
     for q_ in quant_noise_probs:
-        qn_model[q_], _ = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
+        qn_model[q_], _ = load_model(QNVAE, 'qnvae', q_, load_dir)
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
                                     ])
@@ -34,5 +36,5 @@ if __name__ == '__main__':
                 _, _, _, encoding = model(samples)
                 encode_dataset = torch.cat((encode_dataset, encoding))
                 labels_dataset = torch.cat((labels_dataset, labels))
-        torch.save(encode_dataset, f'./models/{args.timestamp}/encoded_data_{q_}.pt')
-        torch.save(labels_dataset, f'./models/{args.timestamp}/encoded_labels_{q_}.pt')
+        torch.save(encode_dataset, f'{load_dir}/encoded_data_{q_}.pt')
+        torch.save(labels_dataset, f'{load_dir}/encoded_labels_{q_}.pt')
