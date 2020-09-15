@@ -17,8 +17,7 @@ torch.manual_seed(seed)
 if __name__ == '__main__':
     if not os.path.exists('models'):
         os.makedirs('models')
-    timestamp = str(datetime.now())[:-7]
-    timestamp = timestamp.replace('-', '_').replace(' ', '_').replace(':', '_')
+    timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
     os.makedirs(f'models/{timestamp}')
 
     logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{timestamp}/training.log'},

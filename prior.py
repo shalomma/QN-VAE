@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 import numpy as np
 import argparse
 import torch
@@ -20,11 +22,13 @@ if __name__ == '__main__':
     parser.add_argument("--reload", dest='reload', help='reload weights', action='store_true')
     args = parser.parse_args()
 
-    logging.config.fileConfig('logging.ini', defaults={'logfile': f'models/{args.timestamp}/training_prior.log'},
+    timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
+    save_dir = f'./models/{timestamp}/{args.timestamp}'
+
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'{save_dir}/training_prior.log'},
                               disable_existing_loggers=False)
     log = logging.getLogger(__name__)
 
-    save_dir = os.path.join('models', args.timestamp)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(device)
 
