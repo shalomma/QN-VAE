@@ -1,20 +1,26 @@
 import os
-import logging.config
 import torch
+import argparse
+from git import Repo
+import logging.config
 from torch import optim
 from datetime import datetime
-from git import Repo
 from torchvision import transforms
 
 import loader
 from qnvae import QNVAE, AE
-from trainer import VAETrainer
 from utils import save_model
+from trainer import VAETrainer
 
 seed = 14
 torch.manual_seed(seed)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-q', type=float, help='one q run', default=0.0)
+    parser.add_argument('-e', type=int, help='epochs', default=100)
+    args = parser.parse_args()
+
     if not os.path.exists('models'):
         os.makedirs('models')
     timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
@@ -26,7 +32,7 @@ if __name__ == '__main__':
 
     params = {
         'batch_size': 1024,
-        'epochs': 2,
+        'epochs': args.e,
         'num_hidden': 128,
         'num_residual_hidden': 32,
         'num_residual_layers': 2,
@@ -37,14 +43,16 @@ if __name__ == '__main__':
         'weight_decay': 1e-4
     }
 
-    quant_noise_probs = [0.25, 0.5, 0.75, 1]
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(device)
 
     qn_model = dict()
-    qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
-                     params['num_residual_hidden'], params['embedding_dim']).to(device)
+    if args.q == 0.0:
+        quant_noise_probs = [0.25, 0.5, 0.75, 1]
+        qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
+                         params['num_residual_hidden'], params['embedding_dim']).to(device)
+    else:
+        quant_noise_probs = [args.q]
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],

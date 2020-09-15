@@ -1,13 +1,13 @@
 import os
-from datetime import datetime
-
-import numpy as np
-import argparse
+import glob
 import torch
-from torch import optim
-import torchvision.transforms as transforms
-import logging.config
+import argparse
+import numpy as np
 from git import Repo
+import logging.config
+from torch import optim
+from datetime import datetime
+import torchvision.transforms as transforms
 
 import loader
 from qnvae import QNVAE
@@ -19,11 +19,15 @@ from utils import save_model, load_model
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('timestamp', type=str, help='models timestamp')
+    parser.add_argument('-e', type=int, help='epochs', default=100)
     parser.add_argument("--reload", dest='reload', help='reload weights', action='store_true')
     args = parser.parse_args()
 
     timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
-    save_dir = f'./models/{timestamp}/{args.timestamp}'
+    save_dir = f'./models/{args.timestamp}/{timestamp}'
+    load_dir = f'./models/{args.timestamp}'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     logging.config.fileConfig('logging.ini', defaults={'logfile': f'{save_dir}/training_prior.log'},
                               disable_existing_loggers=False)
@@ -34,7 +38,7 @@ if __name__ == '__main__':
 
     params = {
         'batch_size': 32,
-        'epochs': 50,
+        'epochs': args.e,
         'data_channels': 1,
         'levels': 100,
         'hidden_fmaps': 120,
@@ -46,7 +50,7 @@ if __name__ == '__main__':
         'learning_rate': 1e-4,
         'weight_decay': 1e-4,
     }
-    _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=save_dir)
+    _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=load_dir)
 
     def quantize(image):
         return np.digitize(image, np.arange(params['levels']) / params['levels']) - 1
@@ -55,7 +59,8 @@ if __name__ == '__main__':
         transforms.Lambda(lambda image: np.array(image) / params_qnvae['num_embeddings']),
         transforms.Lambda(lambda image: quantize(image)),
     ])
-    quant_noise_probs = [0.25, 0.5, 0.75, 1]
+    quant_noise_probs = [float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')]
+    quant_noise_probs = sorted([q for q in quant_noise_probs if q != 0.0])
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
         loaders = loader.EncodedLoader(save_dir, q, discretize).get(params['batch_size'], pin_memory=False)
