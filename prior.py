@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
-        loaders = loader.EncodedLoader(save_dir, q, discretize).get(params['batch_size'], pin_memory=False)
+        loaders = loader.EncodedLoader(load_dir, q, discretize).get(params['batch_size'], pin_memory=False)
         prior_model = PixelCNN(params['data_channels'], params['hidden_fmaps'],
                                params['levels'], params['hidden_layers'],
                                params['causal_ksize'], params['hidden_ksize'], params['out_hidden_fmaps']).to(device)
