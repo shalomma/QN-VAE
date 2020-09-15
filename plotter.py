@@ -43,12 +43,11 @@ class Plotter:
         return smoothed
 
     def losses(self, params):
-        smoothed = self.smooth(params, 'loss')
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
             for p in ['train', 'val']:
-                ax.plot(smoothed[p][q], label=f'{p} q={q}')
+                ax.plot(params[q]['metrics'][p]['loss'], label=f'{p} q={q}')
         ax.set_yscale('log')
         ax.set_title('Smoothed Reconstruction Error (MSE)')
         ax.set_xlabel('iteration')
@@ -57,12 +56,11 @@ class Plotter:
         plt.show()
 
     def perplexity(self, params):
-        smoothed = self.smooth(params, 'perplexity')
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
             for p in ['train', 'val']:
-                ax.plot(smoothed[p][q], label=f'{p} q={q}')
+                ax.plot(params[q]['metrics'][p]['perplexity'], label=f'{p} q={q}')
         ax.set_title('perplexity')
         ax.set_xlabel('iteration')
         ax.legend()
