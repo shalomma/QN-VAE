@@ -84,6 +84,7 @@ if __name__ == '__main__':
         trainer.epochs = params['epochs']
         trainer.samples_dir = save_dir
         trainer.decoder = qnvae
+        trainer.num_embeddings = params_qnvae['num_embeddings']
         trainer.q = q
         trainer.run()
         params['commit'] = Repo('./').head.commit.hexsha[:7]

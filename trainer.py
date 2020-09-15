@@ -92,6 +92,7 @@ class PriorTrainer(Trainer):
         self.levels = None
         self.max_norm = None
         self.channels = 1
+        self.num_embeddings = 0
         self.decoder = None
         self.q = 0.
 
@@ -109,6 +110,6 @@ class PriorTrainer(Trainer):
     def evaluate(self, epoch):
         encoding = self.model.sample((1, 8, 8), 4, label=None, device=self.device)
         save_samples(encoding, self.samples_dir, f'latent_{self.q}_{epoch}.png')
-        encoding = (encoding * self.levels).long()
+        encoding = (encoding * self.num_embeddings).long()
         decoded = self.decoder.decode_samples(encoding) + 0.5
         save_samples(decoded, self.samples_dir, f'decoded_{self.q}_{epoch}.png')
