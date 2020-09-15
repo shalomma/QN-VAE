@@ -75,7 +75,7 @@ if __name__ == '__main__':
                                weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
                                                 10 * params['learning_rate'], cycle_momentum=False)
-        qnvae, params_qnvae = load_model(QNVAE, 'qnvae', q=q, directory=save_dir)
+        qnvae, params_qnvae = load_model(QNVAE, 'qnvae', q=q, directory=load_dir)
         trainer = PriorTrainer(prior_model, optimizer, loaders, scheduler)
         trainer.max_norm = params['max_norm']
         trainer.levels = params['levels']
