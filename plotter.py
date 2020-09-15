@@ -4,9 +4,10 @@ import umap
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+from torchvision import transforms
 from torchvision.utils import make_grid
 from qnvae import QNVAE
-import loader
+import loader as ld
 from utils import load_model
 
 
@@ -31,14 +32,23 @@ class Plotter:
         return np.transpose(img, (1, 2, 0))
 
     @staticmethod
-    def losses(params):
-        recon_error_smooth = dict()
+    def smooth(params, metric):
+        smoothed = {
+            'train': dict(),
+            'val': dict()
+        }
         for q in quant_noise_probs:
-            recon_error_smooth[q] = savgol_filter(params[q]['loss'], 201, 7)
+            for p in ['train', 'val']:
+                smoothed[p][q] = savgol_filter(params[q]['metrics'][p][metric], 201, 7)
+        return smoothed
+
+    def losses(self, params):
+        smoothed = self.smooth(params, 'loss')
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
-            ax.plot(recon_error_smooth[q], label=f'q={q}')
+            for p in ['train', 'val']:
+                ax.plot(smoothed[p][q], label=f'{p} q={q}')
         ax.set_yscale('log')
         ax.set_title('Smoothed Reconstruction Error (MSE)')
         ax.set_xlabel('iteration')
@@ -46,16 +56,13 @@ class Plotter:
         plt.savefig(f'loss.png')
         plt.show()
 
-    @staticmethod
-    def perplexity(params):
-        recon_error_smooth = dict()
-        for q in quant_noise_probs:
-            if q != 0:
-                recon_error_smooth[q] = savgol_filter(params[q]['perplexity'], 201, 7)
+    def perplexity(self, params):
+        smoothed = self.smooth(params, 'perplexity')
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
-        for q, values in recon_error_smooth.items():
-            ax.plot(values, label=f'q={q}')
+        for q in quant_noise_probs:
+            for p in ['train', 'val']:
+                ax.plot(smoothed[p][q], label=f'{p} q={q}')
         ax.set_title('perplexity')
         ax.set_xlabel('iteration')
         ax.legend()
@@ -131,7 +138,10 @@ if __name__ == '__main__':
     for q_ in quant_noise_probs:
         qn_model[q_], params_[q_] = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
 
-    loaders_ = loader.CIFAR10Loader().get(64)
+    transform = transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
+                                    ])
+    loaders_ = ld.CIFAR10Loader(transform).get(64)
     plotter = Plotter(qn_model, loaders_)
     plotter.losses(params_)
     plotter.perplexity(params_)
