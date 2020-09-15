@@ -50,7 +50,10 @@ if __name__ == '__main__':
         'learning_rate': 1e-4,
         'weight_decay': 1e-4,
     }
-    _, params_qnvae = load_model(QNVAE, 'qnvae', q=0.25, directory=load_dir)
+
+    quant_noise_probs = [float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')]
+    quant_noise_probs = sorted([q for q in quant_noise_probs if q != 0.0])
+    _, params_qnvae = load_model(QNVAE, 'qnvae', q=quant_noise_probs[0], directory=load_dir)
 
     def quantize(image):
         return np.digitize(image, np.arange(params['levels']) / params['levels']) - 1
@@ -59,8 +62,7 @@ if __name__ == '__main__':
         transforms.Lambda(lambda image: np.array(image) / params_qnvae['num_embeddings']),
         transforms.Lambda(lambda image: quantize(image)),
     ])
-    quant_noise_probs = [float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')]
-    quant_noise_probs = sorted([q for q in quant_noise_probs if q != 0.0])
+
     for q in quant_noise_probs:
         log.info(f'Train q={q}')
         loaders = loader.EncodedLoader(save_dir, q, discretize).get(params['batch_size'], pin_memory=False)
