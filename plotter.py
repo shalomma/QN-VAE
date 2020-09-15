@@ -1,10 +1,11 @@
-import argparse
-import torch
+import glob
 import umap
+import torch
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter
 from torchvision import transforms
+from scipy.signal import savgol_filter
 from torchvision.utils import make_grid
 from qnvae import QNVAE
 import loader as ld
@@ -68,7 +69,7 @@ class Plotter:
         plt.show()
 
     def recon_train(self):
-        _, train_reconstructions, _, _ = self.models[1](self.images['train'])
+        _, train_reconstructions, _, _ = self.models[quant_noise_probs[-1]](self.images['train'])
         fig, axs = plt.subplots(1, 2, figsize=(10, 10))
         fig.suptitle('Training Reconstruction')
         axs[0].imshow(self.prepare_images(self.images['train']), interpolation='nearest')
@@ -131,10 +132,11 @@ if __name__ == '__main__':
     parser.add_argument('timestamp', type=str, help='models timestamp')
     args = parser.parse_args()
 
-    quant_noise_probs = [0, 0.25, 0.5, 0.75, 1]
+    load_dir = f'models/{args.timestamp}'
+    quant_noise_probs = sorted([float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')])
     qn_model, params_ = dict(), dict()
     for q_ in quant_noise_probs:
-        qn_model[q_], params_[q_] = load_model(QNVAE, 'qnvae', q_, f'models/{args.timestamp}')
+        qn_model[q_], params_[q_] = load_model(QNVAE, 'qnvae', q_, load_dir)
 
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
@@ -145,4 +147,4 @@ if __name__ == '__main__':
     plotter.perplexity(params_)
     plotter.recon_train()
     plotter.recon_val()
-    plotter.embedding()
+    # plotter.embedding()
