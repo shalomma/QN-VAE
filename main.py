@@ -17,7 +17,7 @@ torch.manual_seed(seed)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-q', type=float, help='one q run', default=0.0)
+    parser.add_argument('-q', type=str, help='one q run', default=None)
     parser.add_argument('-e', type=int, help='epochs', default=100)
     args = parser.parse_args()
 
@@ -47,12 +47,13 @@ if __name__ == '__main__':
     log.info(device)
 
     qn_model = dict()
-    if args.q == 0.0:
+    if args.q is None:
         quant_noise_probs = [0.25, 0.5, 0.75, 1]
         qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
                          params['num_residual_hidden'], params['embedding_dim']).to(device)
     else:
-        quant_noise_probs = [args.q]
+        quant_noise_probs = args.q.split(',')
+        quant_noise_probs = [float(q) for q in quant_noise_probs]
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],
