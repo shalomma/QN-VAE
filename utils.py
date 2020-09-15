@@ -23,7 +23,7 @@ def load_model(model_class, prefix, q, directory):
     model = model_class(**params_class).to(device)
     with open(f'{directory}/{prefix}_{q}.pt', 'rb') as f:
         state_dict = torch.load(f, map_location=device)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
     model.eval()
     return model, params
 
