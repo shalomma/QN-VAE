@@ -32,6 +32,7 @@ if __name__ == '__main__':
         'batch_size': 32,
         'epochs': 50,
         'data_channels': 1,
+        'levels': 100,
         'hidden_fmaps': 120,
         'hidden_layers': 6,
         'causal_ksize': 7,
