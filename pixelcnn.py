@@ -172,7 +172,7 @@ class PixelCNN(nn.Module, ABC):
                  causal_ksize, hidden_ksize, out_hidden_fmaps):
         super(PixelCNN, self).__init__()
 
-        self.hidden_f_maps = hidden_fmaps
+        self.hidden_fmaps = hidden_fmaps
         self.color_levels = levels
 
         self.causal_conv = CausalBlock(data_channels,
@@ -185,7 +185,7 @@ class PixelCNN(nn.Module, ABC):
               for _ in range(hidden_layers)]
         )
 
-        self.label_embedding = nn.Embedding(10, self.hidden_f_maps)
+        self.label_embedding = nn.Embedding(10, hidden_fmaps)
 
         self.out_hidden_conv = MaskedConv2d(hidden_fmaps,
                                             out_hidden_fmaps,
@@ -206,7 +206,7 @@ class PixelCNN(nn.Module, ABC):
 
         _, _, out, _ = self.hidden_conv({0: v,
                                          1: h,
-                                         2: image.new_zeros((count, self.hidden_f_maps, height, width),
+                                         2: image.new_zeros((count, self.hidden_fmaps, height, width),
                                                             requires_grad=True),
                                          3: label}).values()
 
