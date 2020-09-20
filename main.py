@@ -59,10 +59,6 @@ if __name__ == '__main__':
                             params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],
                             quant_noise=q).to(device)
 
-    if torch.cuda.device_count() > 1:
-        for q, model in qn_model.items():
-            qn_model[q] = torch.nn.DataParallel(model, device_ids=[0, 1])
-
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
                                     ])

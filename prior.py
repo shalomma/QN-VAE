@@ -74,9 +74,6 @@ if __name__ == '__main__':
                 state_dict = torch.load(f, map_location=device)
                 prior_model.load_state_dict(state_dict)
 
-        if torch.cuda.device_count() > 1:
-            prior_model = torch.nn.DataParallel(prior_model, device_ids=[0, 1])
-
         optimizer = optim.Adam(prior_model.parameters(), lr=params['learning_rate'],
                                weight_decay=params['weight_decay'])
         scheduler = optim.lr_scheduler.CyclicLR(optimizer, params['learning_rate'],
