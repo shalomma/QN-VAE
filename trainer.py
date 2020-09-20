@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.backends import cudnn
 from utils import save_samples
+import copy
 
 
 cudnn.deterministic = True
@@ -27,6 +28,8 @@ class Trainer(ABC):
         }
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.log = logging.getLogger(__name__).info
+        self.best_weights = None
+        self.best_loss = 100
 
     def run(self):
         for e in range(self.epochs):
@@ -40,15 +43,28 @@ class Trainer(ABC):
                     self.optimizer.zero_grad()
                     self.step(phase, samples, labels)
 
-                to_print += f'\t{phase}: '
-                for metric, values in self.metrics[phase].items():
-                    if values:
-                        to_print += f'{metric}: {np.mean(values[-100:]):.4f}  '
+                to_print = self.metrics_print(to_print, phase)
+                self.model_checkpoint(phase)
 
             if self.scheduler is not None:
                 self.scheduler.step()
             self.log(to_print)
             self.evaluate(e)
+            self.model.load_state_dict(self.best_weights)
+
+    def metrics_print(self, to_print, phase):
+        to_print += f'\t{phase}: '
+        for metric, values in self.metrics[phase].items():
+            if values:
+                to_print += f'{metric}: {np.mean(values[-len(self.loader[phase]):]):.4f}  '
+        return to_print
+
+    def model_checkpoint(self, phase):
+        if phase == 'val':
+            mean_loss = np.mean(self.metrics[phase]['loss'][-len(self.loader[phase]):])
+            if self.best_loss > mean_loss:
+                self.best_loss = mean_loss
+                self.best_weights = copy.deepcopy(self.model.state_dict())
 
     @abstractmethod
     def step(self, phase, samples, labels):
