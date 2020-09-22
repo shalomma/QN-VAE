@@ -158,4 +158,4 @@ if __name__ == '__main__':
     plotter.perplexity(params_)
     plotter.recon_train()
     plotter.recon_val()
-    # plotter.embedding()
+    plotter.embedding()
