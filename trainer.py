@@ -26,6 +26,10 @@ class Trainer(ABC):
             'train': dict(),
             'val': dict(),
         }
+        self.metrics_step = {
+            'train': dict(),
+            'val': dict(),
+        }
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.log = logging.getLogger(__name__).info
         self.best_weights = None
@@ -33,7 +37,6 @@ class Trainer(ABC):
 
     def run(self):
         for e in range(self.epochs):
-            to_print = f'Epoch {e:04}:'
             for phase in self.phases:
                 self.model.train() if phase == 'train' else self.model.eval()
                 for data in self.loader[phase]:
@@ -43,35 +46,37 @@ class Trainer(ABC):
                     self.optimizer.zero_grad()
                     self.step(phase, samples, labels)
 
-                to_print = self.metrics_print(to_print, phase)
-                self.model_checkpoint(phase)
-
             if self.scheduler is not None:
                 self.scheduler.step()
-            self.log(to_print)
+
             self.evaluate(e)
-            self.model.load_state_dict(self.best_weights)
+            self.model_checkpoint()
+            self.log_epoch(e)
 
-    def metrics_print(self, to_print, phase):
-        to_print += f'\t{phase}: '
-        for metric, values in self.metrics[phase].items():
-            if values:
-                to_print += f'{metric}: {np.mean(values[-len(self.loader[phase]):]):.4f}  '
-        return to_print
+        self.model.load_state_dict(self.best_weights)
 
-    def model_checkpoint(self, phase):
-        if phase == 'val':
-            mean_loss = np.mean(self.metrics[phase]['loss'][-len(self.loader[phase]):])
-            if self.best_loss > mean_loss:
-                self.best_loss = mean_loss
-                self.best_weights = copy.deepcopy(self.model.state_dict())
+    def log_epoch(self, epoch):
+        to_print = f'Epoch {epoch:04}:'
+        for phase in self.phases:
+            to_print += f'\t{phase}: '
+            for metric, values in self.metrics[phase].items():
+                to_print += f'{metric}: {values[-1]:.4f}  '
+        self.log(to_print)
+
+    def model_checkpoint(self):
+        loss = self.metrics['val']['loss'][-1]
+        if self.best_loss > loss:
+            self.best_loss = loss
+            self.best_weights = copy.deepcopy(self.model.state_dict())
 
     @abstractmethod
     def step(self, phase, samples, labels):
         pass
 
     def evaluate(self, epoch):
-        pass
+        for phase in self.phases:
+            for metric, values in self.metrics_step[phase].items():
+                self.metrics[phase][metric].append(np.mean(values))
 
 
 class VAETrainer(Trainer):
@@ -82,16 +87,20 @@ class VAETrainer(Trainer):
             'train': {'loss': [], 'perplexity': []},
             'val': {'loss': [], 'perplexity': []}
         }
+        self.metrics_step = {
+            'train': {'loss': [], 'perplexity': []},
+            'val': {'loss': [], 'perplexity': []}
+        }
 
     def step(self, phase, samples, labels):
         vq_loss, data_recon, perplexity, encoding = self.model(samples)
         recon_error = F.mse_loss(data_recon, samples) / self.data_variance
-        self.metrics[phase]['loss'].append(recon_error.item())
+        self.metrics_step[phase]['loss'].append(recon_error.item())
         loss = recon_error
         if vq_loss is not None:
             loss += vq_loss
         if perplexity is not None:
-            self.metrics[phase]['perplexity'].append(perplexity.item())
+            self.metrics_step[phase]['perplexity'].append(perplexity.item())
         if self.model.training:
             loss.backward()
             self.optimizer.step()
@@ -101,6 +110,10 @@ class PriorTrainer(Trainer):
     def __init__(self, model, optimizer, loader, scheduler):
         super(PriorTrainer, self).__init__(model, optimizer, loader, scheduler)
         self.metrics = {
+            'train': {'loss': []},
+            'val': {'loss': []}
+        }
+        self.metrics_step = {
             'train': {'loss': []},
             'val': {'loss': []}
         }
@@ -116,7 +129,7 @@ class PriorTrainer(Trainer):
         normalized_samples = samples.float() / (self.levels - 1)
         outputs = self.model(normalized_samples, labels)
         loss = F.cross_entropy(outputs, samples.long())
-        self.metrics[phase]['loss'].append(loss.item())
+        self.metrics_step[phase]['loss'].append(loss.item())
         if self.model.training:
             loss.backward()
             if self.max_norm is not None:
@@ -124,6 +137,7 @@ class PriorTrainer(Trainer):
             self.optimizer.step()
 
     def evaluate(self, epoch):
+        super(PriorTrainer, self).evaluate()
         encoding = self.model.sample((1, 8, 8), 4, label=None, device=self.device)
         save_samples(encoding, self.samples_dir, f'latent_{self.q}_{epoch}.png')
         encoding = (encoding * self.num_embeddings).long()
