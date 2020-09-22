@@ -87,16 +87,22 @@ class Plotter:
             images[q] = self.prepare_images(valid_reconstructions)
         fig, axs = plt.subplots(2, 3, figsize=(10, 10))
         fig.suptitle('Validation Reconstruction')
-        axs[0, 0].imshow(images[0], interpolation='nearest')
-        axs[0, 0].set_title('q = 0')
-        axs[0, 1].imshow(images[0.25], interpolation='nearest')
-        axs[0, 1].set_title('q = 0.25')
-        axs[0, 2].imshow(images[0.5], interpolation='nearest')
-        axs[0, 2].set_title('q = 0.5')
-        axs[1, 0].imshow(images[0.75], interpolation='nearest')
-        axs[1, 0].set_title('q = 0.75')
-        axs[1, 1].imshow(images[1], interpolation='nearest')
-        axs[1, 1].set_title('q = 1')
+        n = len(images)
+        q = list(images.keys())
+        axs[0, 0].imshow(images[q[0]], interpolation='nearest')
+        axs[0, 0].set_title(f'q = {q[0]}')
+        if n > 1:
+            axs[0, 1].imshow(images[q[1]], interpolation='nearest')
+            axs[0, 1].set_title(f'q = {q[1]}')
+        elif n > 2:
+            axs[0, 2].imshow(images[q[2]], interpolation='nearest')
+            axs[0, 2].set_title(f'q = {q[2]}')
+        elif n > 3:
+            axs[1, 0].imshow(images[q[3]], interpolation='nearest')
+            axs[1, 0].set_title(f'q = {q[3]}')
+        elif n > 4:
+            axs[1, 1].imshow(images[q[4]], interpolation='nearest')
+            axs[1, 1].set_title(f'q = {q[4]}')
         axs[1, 2].imshow(self.prepare_images(self.images['val']), interpolation='nearest')
         axs[1, 2].set_title('Input')
         for ax in axs.flat:
@@ -112,15 +118,20 @@ class Plotter:
                 proj[q] = umap.UMAP(n_neighbors=3, min_dist=0.1,
                                     metric='cosine').fit_transform(model.vq_vae.embedding.weight.data.cpu())
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+        q = list(proj.keys())
+        n = len(proj)
         fig.suptitle('UMAP projection of embedding (codebook)')
-        axs[0, 0].scatter(proj[0.25][:, 0], proj[0.25][:, 1], alpha=0.3)
-        axs[0, 0].set_title('q = 0.25')
-        axs[0, 1].scatter(proj[0.5][:, 0], proj[0.5][:, 1], alpha=0.3)
-        axs[0, 1].set_title('q = 0.5')
-        axs[1, 0].scatter(proj[0.75][:, 0], proj[0.75][:, 1], alpha=0.3)
-        axs[1, 0].set_title('q = 0.75')
-        axs[1, 1].scatter(proj[1][:, 0], proj[1][:, 1], alpha=0.3)
-        axs[1, 1].set_title('q = 1')
+        axs[0, 0].scatter(proj[q[0]][:, 0], proj[q[0]][:, 1], alpha=0.3)
+        axs[0, 0].set_title(f'q = {q[0]}')
+        if n > 1:
+            axs[0, 1].scatter(proj[q[1]][:, 0], proj[q[1]][:, 1], alpha=0.3)
+            axs[0, 1].set_title(f'q = {q[1]}')
+        elif n > 2:
+            axs[1, 0].scatter(proj[q[2]][:, 0], proj[q[2]][:, 1], alpha=0.3)
+            axs[1, 0].set_title(f'q = {q[2]}')
+        elif n > 3:
+            axs[1, 1].scatter(proj[q[3]][:, 0], proj[q[3]][:, 1], alpha=0.3)
+            axs[1, 1].set_title(f'q = {q[3]}')
         for ax in axs.flat:
             ax.label_outer()
         plt.savefig(f'emb.png')
