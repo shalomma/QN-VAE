@@ -82,7 +82,7 @@ class Trainer(ABC):
 class VAETrainer(Trainer):
     def __init__(self, model, optimizer, loader, scheduler=None):
         super(VAETrainer, self).__init__(model, optimizer, loader, scheduler)
-        self.data_variance = np.var(loader['train'].dataset.data / 255.0)
+        self.data_variance = np.var(loader['train'].dataset.data.numpy() / 255.0)
         self.metrics = {
             'train': {'loss': [], 'perplexity': []},
             'val': {'loss': [], 'perplexity': []}
