@@ -47,8 +47,8 @@ class Plotter:
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
-            for p in ['train', 'val']:
-                ax.plot(params[q]['metrics'][p]['loss'], label=f'{p} q={q}')
+            ax.plot(params[q]['metrics']['train']['loss'], label=f'train q={q}')
+            ax.plot(params[q]['metrics']['val']['loss'], linestyle='dashed', label=f'val q={q}')
         ax.set_yscale('log')
         ax.set_title('Smoothed Reconstruction Error (MSE)')
         ax.set_xlabel('iteration')
@@ -60,8 +60,8 @@ class Plotter:
         fig = plt.figure(figsize=(16, 8))
         ax = fig.add_subplot(1, 1, 1)
         for q in quant_noise_probs:
-            for p in ['train', 'val']:
-                ax.plot(params[q]['metrics'][p]['perplexity'], label=f'{p} q={q}')
+            ax.plot(params[q]['metrics']['train']['perplexity'], label=f'train q={q}')
+            ax.plot(params[q]['metrics']['val']['perplexity'], linestyle='dashed', label=f'val q={q}')
         ax.set_title('perplexity')
         ax.set_xlabel('iteration')
         ax.legend()
