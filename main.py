@@ -61,15 +61,15 @@ if __name__ == '__main__':
         raise Exception('Not a defined dataset')
 
     qn_model = dict()
-    quant_noise_probs = args.q.split(',')
+    quant_noise_probs = args.quant.split(',')
     quant_noise_probs = [float(q) for q in quant_noise_probs]
-    if 0 in quant_noise_probs:
-        qn_model[0] = AE(params['in_channels'], params['num_hidden'], params['num_residual_layers'],
-                         params['num_residual_hidden'], params['embedding_dim']).to(device)
     for q in quant_noise_probs:
         qn_model[q] = QNVAE(params['in_channels'], params['num_hidden'], params['num_residual_layers'],
                             params['num_residual_hidden'], params['num_embeddings'],
                             params['embedding_dim'], params['commitment_cost'], quant_noise=q).to(device)
+    if 0 in quant_noise_probs:
+        qn_model[0] = AE(params['in_channels'], params['num_hidden'], params['num_residual_layers'],
+                         params['num_residual_hidden'], params['embedding_dim']).to(device)
 
     for q, model in qn_model.items():
         log.info(f'Train q={q}')
