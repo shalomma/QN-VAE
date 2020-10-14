@@ -124,7 +124,7 @@ class Encoder(nn.Module, ABC):
 
 
 class Decoder(nn.Module, ABC):
-    def __init__(self, in_channels, num_hidden, num_residual_layers, num_residual_hidden):
+    def __init__(self, in_channels, num_hidden, num_residual_layers, num_residual_hidden, out_channels):
         super(Decoder, self).__init__()
         torch.manual_seed(seed)
         self._conv_1 = nn.Conv2d(in_channels=in_channels,
@@ -140,7 +140,7 @@ class Decoder(nn.Module, ABC):
                                                 kernel_size=4,
                                                 stride=2, padding=1)
         self._conv_trans_2 = nn.ConvTranspose2d(in_channels=num_hidden // 2,
-                                                out_channels=3,
+                                                out_channels=out_channels,
                                                 kernel_size=4,
                                                 stride=2, padding=1)
 
@@ -170,7 +170,8 @@ class QNVAE(nn.Module, ABC):
         self._decoder = Decoder(embedding_dim,
                                 num_hidden,
                                 num_residual_layers,
-                                num_residual_hidden)
+                                num_residual_hidden,
+                                in_channels)
 
     def forward(self, x):
         z = self._encoder(x)
