@@ -54,7 +54,7 @@ if __name__ == '__main__':
         params['in_channels'] = 3
     elif args.dataset == 'mnist':
         transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
+                                        transforms.Normalize(mean=(0.5,), std=(1.0,))])
         loaders = loader.MNISTLoader(transform).get(params['batch_size'])
         params['in_channels'] = 1
     else:
