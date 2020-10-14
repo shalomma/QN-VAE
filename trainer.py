@@ -138,7 +138,7 @@ class PriorTrainer(Trainer):
 
     def evaluate(self, epoch):
         super(PriorTrainer, self).evaluate(epoch)
-        encoding = self.model.sample((1, 8, 8), 4, label=None, device=self.device)
+        encoding = self.model.sample((1, 7, 7), 4, label=None, device=self.device)
         save_samples(encoding, self.samples_dir, f'latent_{self.q}_{epoch}.png')
         encoding = (encoding * self.num_embeddings).long()
         decoded = self.decoder.decode_samples(encoding) + 0.5
