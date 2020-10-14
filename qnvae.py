@@ -185,7 +185,7 @@ class QNVAE(nn.Module, ABC):
         encoding_indices = encoding_indices.view(-1, 1).long()
         flattened_size = encoding_indices.shape[0]
         encodings = torch.zeros(flattened_size, self.vq_vae._num_embeddings, device=encoding_indices.device)
-        encodings.scatter_(1, encoding_indices, 1)
+        encodings.scatter_(1, encoding_indices - 1, 1)
         quantized = torch.matmul(encodings, self.vq_vae.embedding.weight)
         quantized = quantized.view([batch, w, h, self.embedding_dim])
         quantized = quantized.permute(0, 3, 1, 2).contiguous()
