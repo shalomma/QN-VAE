@@ -17,8 +17,9 @@ torch.manual_seed(seed)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-q', type=str, help='one q run', default=None)
-    parser.add_argument('-e', type=int, help='epochs', default=100)
+    parser.add_argument('quant', type=str, help='quant list')
+    parser.add_argument('--dataset', type=str, help='epochs', default='cifar10')
+    parser.add_argument('--epochs', type=int, help='epochs', default=100)
     args = parser.parse_args()
 
     if not os.path.exists('models'):
@@ -32,7 +33,7 @@ if __name__ == '__main__':
 
     params = {
         'batch_size': 1024,
-        'epochs': args.e,
+        'epochs': args.epochs,
         'num_hidden': 128,
         'num_residual_hidden': 32,
         'num_residual_layers': 2,
@@ -46,23 +47,29 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info(device)
 
-    qn_model = dict()
-    if args.q is None:
-        quant_noise_probs = [0.25, 0.5, 0.75, 1]
-        qn_model[0] = AE(params['num_hidden'], params['num_residual_layers'],
-                         params['num_residual_hidden'], params['embedding_dim']).to(device)
+    if args.dataset == 'cifar10':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))])
+        loaders = loader.CIFAR10Loader(transform).get(params['batch_size'])
+        params['in_channels'] = 3
+    elif args.dataset == 'mnist':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
+        loaders = loader.MNISTLoader(transform).get(params['batch_size'])
+        params['in_channels'] = 1
     else:
-        quant_noise_probs = args.q.split(',')
-        quant_noise_probs = [float(q) for q in quant_noise_probs]
-    for q in quant_noise_probs:
-        qn_model[q] = QNVAE(params['num_hidden'], params['num_residual_layers'], params['num_residual_hidden'],
-                            params['num_embeddings'], params['embedding_dim'], params['commitment_cost'],
-                            quant_noise=q).to(device)
+        raise Exception('Not a defined dataset')
 
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
-                                    ])
-    loaders = loader.CIFAR10Loader(transform).get(params['batch_size'])
+    qn_model = dict()
+    quant_noise_probs = args.q.split(',')
+    quant_noise_probs = [float(q) for q in quant_noise_probs]
+    if 0 in quant_noise_probs:
+        qn_model[0] = AE(params['in_channels'], params['num_hidden'], params['num_residual_layers'],
+                         params['num_residual_hidden'], params['embedding_dim']).to(device)
+    for q in quant_noise_probs:
+        qn_model[q] = QNVAE(params['in_channels'], params['num_hidden'], params['num_residual_layers'],
+                            params['num_residual_hidden'], params['num_embeddings'],
+                            params['embedding_dim'], params['commitment_cost'], quant_noise=q).to(device)
 
     for q, model in qn_model.items():
         log.info(f'Train q={q}')
