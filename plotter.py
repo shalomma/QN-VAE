@@ -149,10 +149,18 @@ if __name__ == '__main__':
     for q_ in quant_noise_probs:
         qn_model[q_], params_[q_] = load_model(QNVAE, 'qnvae', q_, load_dir)
 
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
-                                    ])
-    loaders_ = ld.CIFAR10Loader(transform).get(64)
+    dataset = params_[quant_noise_probs[0]]['dataset']
+    if dataset == 'cifar10':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))])
+        loaders_ = ld.CIFAR10Loader(transform).get(64)
+    elif dataset == 'mnist':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5,), std=(1.0,))])
+        loaders_ = ld.MNISTLoader(transform).get(64)
+    else:
+        raise Exception('Not a defined dataset')
+
     plotter = Plotter(qn_model, loaders_)
     plotter.losses(params_)
     plotter.perplexity(params_)
