@@ -18,13 +18,23 @@ if __name__ == '__main__':
     batch_size = 1024
     quant_noise_probs = [float(q.split('/')[-1][6:-3]) for q in glob.glob(f'{load_dir}/qnvae*.pt')]
     quant_noise_probs = sorted([q for q in quant_noise_probs if q != 0.0])
+
+    params = None
     qn_model = dict()
     for q_ in quant_noise_probs:
-        qn_model[q_], _ = load_model(QNVAE, 'qnvae', q_, load_dir)
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))
-                                    ])
-    loaders = loader.CIFAR10Loader(transform).get(batch_size)
+        qn_model[q_], params = load_model(QNVAE, 'qnvae', q_, load_dir)
+
+    if params['dataset'] == 'cifar10':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(1.0, 1.0, 1.0))])
+        loaders = loader.CIFAR10Loader(transform).get(params['batch_size'])
+    elif params['dataset'] == 'mnist':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5,), std=(1.0,))])
+        loaders = loader.MNISTLoader(transform).get(params['batch_size'])
+    else:
+        raise Exception('Not a defined dataset')
+
     for q_, model in qn_model.items():
         print(f'Encoding using {q_} QN-VAE')
         model.eval()
