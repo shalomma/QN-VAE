@@ -59,6 +59,7 @@ if __name__ == '__main__':
         params['in_channels'] = 1
     else:
         raise Exception('Not a defined dataset')
+    params['dataset'] = args.dataset
 
     qn_model = dict()
     quant_noise_probs = args.quant.split(',')
