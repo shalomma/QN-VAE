@@ -29,7 +29,7 @@ if __name__ == '__main__':
         encoding = (encoding * (params['levels'] - 1)).long()
         model_qnvae, _ = load_model(QNVAE, 'qnvae', q_, directory)
         decoded = model_qnvae.decode_samples(encoding) + 0.5
-        directory_img = f'{directory}/{q_}'
+        directory_img = f'{directory_prior}/{q_}'
         os.makedirs(directory_img)
         for i in range(args.n_samples):
             save_image(decoded[i], os.path.join(directory_img, f'{i}.png'))
