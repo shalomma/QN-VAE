@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.backends import cudnn
 from utils import save_samples
+from torchvision.utils import save_image
 import copy
 
 
@@ -210,6 +211,10 @@ class GANTrainer(Trainer):
         for phase in ['discriminator', 'generator']:
             for metric, values in self.metrics_step[phase].items():
                 self.metrics[phase][metric].append(np.mean(values))
+        z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)), device=self.device))
+        z = z.type(torch.float32)
+        gen_imgs = self.model['generator'](z)
+        save_image(gen_imgs.data, f"images/{epoch}.png", nrow=5, normalize=True)
 
     def model_checkpoint(self):
         pass
