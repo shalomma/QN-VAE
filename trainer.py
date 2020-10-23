@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 from torch.backends import cudnn
 from utils import save_samples
 import copy
@@ -143,3 +144,57 @@ class PriorTrainer(Trainer):
         encoding = (encoding * (self.num_embeddings - 1)).long()
         decoded = self.decoder.decode_samples(encoding) + 0.5
         save_samples(decoded, self.samples_dir, f'decoded_{self.q}_{epoch}.png')
+
+
+class GANTrainer(Trainer):
+    def __init__(self, model, optimizer, loader, scheduler):
+        super(GANTrainer, self).__init__(model, optimizer, loader, scheduler)
+        self.loss = None
+        self.latent_dim = None
+        self.phases = ['train']
+        self.metrics = {
+            'generator': {'loss': []},
+            'discriminator': {'loss': []}
+        }
+        self.metrics_step = {
+            'generator': {'loss': []},
+            'discriminator': {'loss': []}
+        }
+
+    def step(self, phase, samples, labels):
+        valid = Variable(torch.tensor((samples.size(0), 1)).fill_(1.0), requires_grad=False, device=self.device)
+        fake = Variable(torch.tensor((samples.size(0), 1)).fill_(0.0), requires_grad=False, device=self.device)
+        real_imgs = Variable(samples, requires_grad=False)
+
+        self.optimizer['generator'].zero_grad()
+        z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)), device=self.device))
+        gen_imgs = self.model['generator'](z)
+        g_loss = self.loss(self.model['discriminator'](gen_imgs), valid)
+        g_loss.backward()
+        self.optimizer['generator'].step()
+
+        self.optimizer['discriminator'].zero_grad()
+        real_loss = self.loss(self.model['discriminator'](real_imgs), valid)
+        fake_loss = self.loss(self.model['discriminator'](gen_imgs.detach()), fake)
+        d_loss = (real_loss + fake_loss) / 2
+        d_loss.backward()
+        self.optimizer['discriminator'].step()
+
+        self.metrics_step['discriminator']['loss'].append(d_loss.item())
+        self.metrics_step['generator']['loss'].append(g_loss.item())
+
+    def log_epoch(self, epoch):
+        to_print = f'Epoch {epoch:04}:'
+        for phase in ['discriminator', 'generator']:
+            to_print += f'\t{phase}: '
+            for metric, values in self.metrics[phase].items():
+                to_print += f'{metric}: {values[-1]:.4f}  '
+        self.log(to_print)
+
+    def evaluate(self, epoch):
+        for phase in ['discriminator', 'generator']:
+            for metric, values in self.metrics_step[phase].items():
+                self.metrics[phase][metric].append(np.mean(values))
+
+    def model_checkpoint(self):
+        pass
