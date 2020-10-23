@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 from abc import ABC
+import logging.config
 import torch.nn as nn
 from torchvision import transforms
 
@@ -81,14 +82,19 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, help='epochs', default=100)
     args = parser.parse_args()
 
+    load_dir = f'./models/{args.timestamp}'
+    os.makedirs("images", exist_ok=True)
+
+    logging.config.fileConfig('logging.ini', defaults={'logfile': f'{load_dir}/training_prior.log'},
+                              disable_existing_loggers=False)
+    log = logging.getLogger(__name__)
+
     params = {
         'epochs': args.epochs,
         'batch_size': 32,
         'learning_rate': 1e-4,
         'latent_dim': 64
     }
-    load_dir = f'./models/{args.timestamp}'
-    os.makedirs("images", exist_ok=True)
 
     img_size = 28
     img_shape = (1, img_size, img_size)
