@@ -39,12 +39,12 @@ class Trainer(ABC):
     def run(self):
         for e in range(self.epochs):
             for phase in self.phases:
-                self.model.train() if phase == 'train' else self.model.eval()
+                self.set_model_phase(phase)
                 for data in self.loader[phase]:
                     samples, labels = data
                     samples = samples.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
-                    self.optimizer.zero_grad()
+                    self.zero_grad()
                     self.step(phase, samples, labels)
 
             if self.scheduler is not None:
@@ -55,6 +55,12 @@ class Trainer(ABC):
             self.log_epoch(e)
 
         self.model.load_state_dict(self.best_weights)
+
+    def set_model_phase(self, phase):
+        self.model.train() if phase == 'train' else self.model.eval()
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
 
     def log_epoch(self, epoch):
         to_print = f'Epoch {epoch:04}:'
@@ -162,12 +168,13 @@ class GANTrainer(Trainer):
         }
 
     def step(self, phase, samples, labels):
-        valid = Variable(torch.tensor((samples.size(0), 1)).fill_(1.0), requires_grad=False, device=self.device)
-        fake = Variable(torch.tensor((samples.size(0), 1)).fill_(0.0), requires_grad=False, device=self.device)
+        valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
+        fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
         real_imgs = Variable(samples, requires_grad=False)
 
         self.optimizer['generator'].zero_grad()
         z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)), device=self.device))
+        z = z.type(torch.float32)
         gen_imgs = self.model['generator'](z)
         g_loss = self.loss(self.model['discriminator'](gen_imgs), valid)
         g_loss.backward()
@@ -182,6 +189,14 @@ class GANTrainer(Trainer):
 
         self.metrics_step['discriminator']['loss'].append(d_loss.item())
         self.metrics_step['generator']['loss'].append(g_loss.item())
+
+    def set_model_phase(self, phase):
+        self.model['generator'].train() if phase == 'train' else self.model['generator'].eval()
+        self.model['discriminator'].train() if phase == 'train' else self.model['discriminator'].eval()
+
+    def zero_grad(self):
+        self.optimizer['generator'].zero_grad()
+        self.optimizer['discriminator'].zero_grad()
 
     def log_epoch(self, epoch):
         to_print = f'Epoch {epoch:04}:'
