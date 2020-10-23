@@ -1,14 +1,12 @@
 import os
 import torch
 import argparse
-import numpy as np
 from abc import ABC
 import torch.nn as nn
-from torch.autograd import Variable
 from torchvision import transforms
-from torchvision.utils import save_image
 
 import loader
+from trainer import GANTrainer
 
 
 def weights_init_normal(m):
@@ -65,7 +63,7 @@ class Discriminator(nn.Module, ABC):
             *discriminator_block(64, 128),
         )
 
-        # The height and width of downsampled image
+        # The height and width of down sampled image
         ds_size = 2  # in_size // 2 ** 4
         self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
 
@@ -103,7 +101,6 @@ if __name__ == '__main__':
     discriminator = Discriminator(1, img_size)
 
     cuda = True if torch.cuda.is_available() else False
-    Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
     if cuda:
         generator.cuda()
@@ -114,61 +111,23 @@ if __name__ == '__main__':
     generator.apply(weights_init_normal)
     discriminator.apply(weights_init_normal)
 
-    # Optimizers
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=params['learning_rate'])
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=params['learning_rate'])
+    model = {
+        'generator': generator,
+        'discriminator': discriminator
+    }
+
+    optimizer = {
+        'generator': torch.optim.Adam(generator.parameters(), lr=params['learning_rate']),
+        'discriminator': torch.optim.Adam(discriminator.parameters(), lr=params['learning_rate'])
+    }
 
     # loaders = loader.EncodedLoader(load_dir, q=0.8).get(params['batch_size'], pin_memory=False)
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize(mean=(0.5,), std=(1.0,))])
     loaders = loader.MNISTLoader(transform).get(params['batch_size'])
 
-    for epoch in range(params['epochs']):
-        for i, (imgs, _) in enumerate(loaders['train']):
-
-            # Adversarial ground truths
-            valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
-            fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
-
-            # Configure input
-            real_imgs = Variable(imgs.type(Tensor))
-
-            # -----------------
-            #  Train Generator
-            # -----------------
-
-            optimizer_G.zero_grad()
-
-            # Sample noise as generator input
-            z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], params['latent_dim']))))
-
-            # Generate a batch of images
-            gen_imgs = generator(z)
-
-            # Loss measures generator's ability to fool the discriminator
-            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
-
-            g_loss.backward()
-            optimizer_G.step()
-
-            # ---------------------
-            #  Train Discriminator
-            # ---------------------
-
-            optimizer_D.zero_grad()
-
-            # Measure discriminator's ability to classify real from generated samples
-            real_loss = adversarial_loss(discriminator(real_imgs), valid)
-            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
-            d_loss = (real_loss + fake_loss) / 2
-
-            d_loss.backward()
-            optimizer_D.step()
-
-            batches_done = epoch * len(loaders['train']) + i
-            if batches_done % 200 == 0:
-                print(
-                    "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                    % (epoch, params['epochs'], i, len(loaders['train']), d_loss.item(), g_loss.item())
-                )
-                save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+    trainer = GANTrainer(model, optimizer, loaders, None)
+    trainer.loss = adversarial_loss
+    trainer.epochs = params['epochs']
+    trainer.latent_dim = params['latent_dim']
+    trainer.run()
