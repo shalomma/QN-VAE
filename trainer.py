@@ -173,15 +173,13 @@ class GANTrainer(Trainer):
         fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
         real_imgs = Variable(samples, requires_grad=False)
 
-        self.optimizer['generator'].zero_grad()
-        z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)), device=self.device))
-        z = z.type(torch.float32)
+        z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)),
+                                  dtype=torch.float32, device=self.device))
         gen_imgs = self.model['generator'](z)
         g_loss = self.loss(self.model['discriminator'](gen_imgs), valid)
         g_loss.backward()
         self.optimizer['generator'].step()
 
-        self.optimizer['discriminator'].zero_grad()
         real_loss = self.loss(self.model['discriminator'](real_imgs), valid)
         fake_loss = self.loss(self.model['discriminator'](gen_imgs.detach()), fake)
         d_loss = (real_loss + fake_loss) / 2
