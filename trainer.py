@@ -171,17 +171,17 @@ class GANTrainer(Trainer):
     def step(self, phase, samples, labels):
         valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
         fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
-        real_imgs = Variable(samples, requires_grad=False)
+        real_samples = Variable(samples, requires_grad=False)
 
         z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)),
                                   dtype=torch.float32, device=self.device))
-        gen_imgs = self.model['generator'](z)
-        g_loss = self.loss(self.model['discriminator'](gen_imgs), valid)
+        gen_samples = self.model['generator'](z)
+        g_loss = self.loss(self.model['discriminator'](gen_samples), valid)
         g_loss.backward()
         self.optimizer['generator'].step()
 
-        real_loss = self.loss(self.model['discriminator'](real_imgs), valid)
-        fake_loss = self.loss(self.model['discriminator'](gen_imgs.detach()), fake)
+        real_loss = self.loss(self.model['discriminator'](real_samples), valid)
+        fake_loss = self.loss(self.model['discriminator'](gen_samples.detach()), fake)
         d_loss = (real_loss + fake_loss) / 2
         d_loss.backward()
         self.optimizer['discriminator'].step()
@@ -211,8 +211,8 @@ class GANTrainer(Trainer):
                 self.metrics[phase][metric].append(np.mean(values))
         z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)), device=self.device))
         z = z.type(torch.float32)
-        gen_imgs = self.model['generator'](z)
-        save_image(gen_imgs.data, f"images/{epoch}.png", nrow=5, normalize=True)
+        gen_samples = self.model['generator'](z)
+        save_image(gen_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
 
     def model_checkpoint(self):
         pass
