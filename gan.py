@@ -7,7 +7,7 @@ import torch.nn as nn
 from torchvision import transforms
 
 import loader
-from trainer import GANTrainer
+import trainer as trn
 
 
 def weights_init_normal(m):
@@ -133,7 +133,7 @@ if __name__ == '__main__':
                                     transforms.Normalize(mean=(0.5,), std=(1.0,))])
     loaders = loader.MNISTLoader(transform).get(params['batch_size'])
 
-    trainer = GANTrainer(model, optimizer, loaders, None)
+    trainer = trn.GANTrainer(model, optimizer, loaders, None)
     trainer.loss = adversarial_loss
     trainer.n_critic = params['n_critic']
     trainer.epochs = params['epochs']
