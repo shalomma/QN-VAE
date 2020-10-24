@@ -161,7 +161,6 @@ class GANTrainer(Trainer):
         super(GANTrainer, self).__init__(model, optimizer, loader, scheduler)
         self.loss = None
         self.latent_dim = None
-        self.phases = ['train']
         self.n_critic = 1
         self.metrics = {
             'generator': {'loss': []},
@@ -196,8 +195,8 @@ class GANTrainer(Trainer):
         self.metrics_step['discriminator']['loss'].append(d_loss.item())
 
     def set_model_phase(self, phase):
-        self.model['generator'].train() if phase == 'train' else self.model['generator'].eval()
-        self.model['discriminator'].train() if phase == 'train' else self.model['discriminator'].eval()
+        self.model['generator'].train()
+        self.model['discriminator'].train()
 
     def zero_grad(self):
         self.optimizer['generator'].zero_grad()
@@ -215,8 +214,9 @@ class GANTrainer(Trainer):
         for phase in ['discriminator', 'generator']:
             for metric, values in self.metrics_step[phase].items():
                 self.metrics[phase][metric].append(np.mean(values))
-        z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)), device=self.device))
-        z = z.type(torch.float32)
+        z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)),
+                                  device=self.device, dtype=torch.float32))
+        self.model['generator'].eval()
         fake_samples = self.model['generator'](z)
         save_image(fake_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
 
