@@ -171,16 +171,66 @@ class GANTrainer(Trainer):
         }
 
     def step(self, epoch, phase, samples, labels):
-        # valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
-        # fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
+        valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
+        fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
         real_samples = Variable(samples, requires_grad=False)
-
         z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)),
                                   dtype=torch.float32, device=self.device))
         fake_samples = self.model['generator'](z)
-        # real_loss = self.loss(self.model['discriminator'](real_samples), valid)
-        # fake_loss = self.loss(self.model['discriminator'](fake_samples.detach()), fake)
-        # d_loss = (real_loss + fake_loss) / 2
+        real_loss = self.loss(self.model['discriminator'](real_samples), valid)
+        fake_loss = self.loss(self.model['discriminator'](fake_samples.detach()), fake)
+        d_loss = (real_loss + fake_loss) / 2
+        d_loss.backward()
+        self.optimizer['discriminator'].step()
+
+        if epoch % self.n_critic == 0:
+            self.optimizer['generator'].zero_grad()
+            fake_samples = self.model['generator'](z)
+            g_loss = self.loss(self.model['discriminator'](fake_samples), valid)
+            g_loss.backward()
+            self.optimizer['generator'].step()
+            self.metrics_step['generator']['loss'].append(g_loss.item())
+
+        self.metrics_step['discriminator']['loss'].append(d_loss.item())
+
+    def set_model_phase(self, phase):
+        self.model['generator'].train() if phase == 'train' else self.model['generator'].eval()
+        self.model['discriminator'].train() if phase == 'train' else self.model['discriminator'].eval()
+
+    def zero_grad(self):
+        self.optimizer['generator'].zero_grad()
+        self.optimizer['discriminator'].zero_grad()
+
+    def log_epoch(self, epoch):
+        to_print = f'Epoch {epoch:04}:'
+        for phase in ['discriminator', 'generator']:
+            to_print += f'\t{phase}: '
+            for metric, values in self.metrics[phase].items():
+                to_print += f'{metric}: {values[-1]:.4f}  '
+        self.log(to_print)
+
+    def evaluate(self, epoch):
+        for phase in ['discriminator', 'generator']:
+            for metric, values in self.metrics_step[phase].items():
+                self.metrics[phase][metric].append(np.mean(values))
+        z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)), device=self.device))
+        z = z.type(torch.float32)
+        fake_samples = self.model['generator'](z)
+        save_image(fake_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
+
+    def model_checkpoint(self):
+        pass
+
+
+class WGANGPTrainer(GANTrainer):
+    def __init__(self, model, optimizer, loader, scheduler):
+        super(WGANGPTrainer, self).__init__(model, optimizer, loader, scheduler)
+
+    def step(self, epoch, phase, samples, labels):
+        real_samples = Variable(samples, requires_grad=False)
+        z = Variable(torch.tensor(np.random.normal(0, 1, (samples.shape[0], self.latent_dim)),
+                                  dtype=torch.float32, device=self.device))
+        fake_samples = self.model['generator'](z)
         real_validity = self.model['discriminator'](real_samples)
         fake_validity = self.model['discriminator'](fake_samples)
         gradient_penalty = self.compute_gradient_penalty(real_samples.data, fake_samples.data)
@@ -191,7 +241,6 @@ class GANTrainer(Trainer):
         if epoch % self.n_critic == 0:
             self.optimizer['generator'].zero_grad()
             fake_samples = self.model['generator'](z)
-            # g_loss = self.loss(self.model['discriminator'](fake_samples), valid)
             g_loss = -torch.mean(self.model['discriminator'](fake_samples))
             g_loss.backward()
             self.optimizer['generator'].step()
@@ -221,31 +270,3 @@ class GANTrainer(Trainer):
         gradients = gradients.view(gradients.size(0), -1)
         gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
         return gradient_penalty
-
-    def set_model_phase(self, phase):
-        self.model['generator'].train() if phase == 'train' else self.model['generator'].eval()
-        self.model['discriminator'].train() if phase == 'train' else self.model['discriminator'].eval()
-
-    def zero_grad(self):
-        self.optimizer['generator'].zero_grad()
-        self.optimizer['discriminator'].zero_grad()
-
-    def log_epoch(self, epoch):
-        to_print = f'Epoch {epoch:04}:'
-        for phase in ['discriminator', 'generator']:
-            to_print += f'\t{phase}: '
-            for metric, values in self.metrics[phase].items():
-                to_print += f'{metric}: {values[-1]:.4f}  '
-        self.log(to_print)
-
-    def evaluate(self, epoch):
-        for phase in ['discriminator', 'generator']:
-            for metric, values in self.metrics_step[phase].items():
-                self.metrics[phase][metric].append(np.mean(values))
-        z = Variable(torch.tensor(np.random.normal(0, 1, (25, self.latent_dim)), device=self.device))
-        z = z.type(torch.float32)
-        fake_samples = self.model['generator'](z)
-        save_image(fake_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
-
-    def model_checkpoint(self):
-        pass
