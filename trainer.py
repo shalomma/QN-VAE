@@ -201,7 +201,7 @@ class GANTrainer(Trainer):
     def compute_gradient_penalty(self, real_samples, fake_samples):
         """Calculates the gradient penalty loss for WGAN GP"""
         # Random weight term for interpolation between real and fake samples
-        alpha = torch.tensor(np.random.random((real_samples.size(0), 1, 1, 1)), dtype=torch.float32)
+        alpha = torch.tensor(np.random.random((real_samples.size(0), 1, 1, 1)), dtype=torch.float32, device=self.device)
         # Get random interpolation between real and fake samples
         interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
         d_interpolates = self.model['discriminator'](interpolates)
