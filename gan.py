@@ -96,18 +96,17 @@ if __name__ == '__main__':
         'batch_size': 32,
         'learning_rate': 1e-4,
         'latent_dim': 64,
-        'n_critic': 1
+        'n_critic': 1,
+        'channels': 1,
+        'in_size': 28
     }
-
-    img_size = 28
-    img_shape = (1, img_size, img_size)
 
     # Loss function
     adversarial_loss = torch.nn.BCELoss()
 
     # Initialize generator and discriminator
-    generator = Generator(1, img_size, params['latent_dim'])
-    discriminator = Discriminator(1, img_size)
+    generator = Generator(1, params['img_size'], params['latent_dim'])
+    discriminator = Discriminator(1, params['img_size'])
 
     cuda = True if torch.cuda.is_available() else False
 
