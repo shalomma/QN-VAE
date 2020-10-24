@@ -109,12 +109,12 @@ if __name__ == '__main__':
     generator = Generator(params['channels'], params['in_size'], params['latent_dim'])
     discriminator = Discriminator(params['channels'], params['in_size'])
 
-    cuda = True if torch.cuda.is_available() else False
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info(device)
 
-    if cuda:
-        generator.cuda()
-        discriminator.cuda()
-        adversarial_loss.cuda()
+    generator.to(device)
+    discriminator.to(device)
+    adversarial_loss.to(device)
 
     # Initialize weights
     generator.apply(weights_init_normal)
