@@ -20,7 +20,7 @@ if __name__ == '__main__':
     os.makedirs(directory_img, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    generator, params = load_model(Generator, 'generator', 'minst', directory)
+    generator, params = load_model(Generator, 'generator', 'mnist', directory)
     z = Variable(torch.tensor(np.random.normal(0, 1, (25, params['latent_dim'])), device=device, dtype=torch.float32))
     generated = generator(z)
     for i in range(args.n_samples):
