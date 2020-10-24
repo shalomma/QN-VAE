@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_samples', type=int, default=64)
     args = parser.parse_args()
 
-    directory = f'models/{args.gan_dir}/'
+    directory = f'models/{args.gan_dir}'
     directory_img = f'{directory}/images'
     os.makedirs(directory_img, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
