@@ -46,7 +46,7 @@ class Trainer(ABC):
                     samples = samples.to(self.device, non_blocking=True)
                     labels = labels.to(self.device, non_blocking=True)
                     self.zero_grad()
-                    self.step(phase, samples, labels)
+                    self.step(e, phase, samples, labels)
 
             if self.scheduler is not None:
                 self.scheduler.step()
@@ -78,7 +78,7 @@ class Trainer(ABC):
             self.best_weights = copy.deepcopy(self.model.state_dict())
 
     @abstractmethod
-    def step(self, phase, samples, labels):
+    def step(self, epoch, phase, samples, labels):
         pass
 
     def evaluate(self, epoch):
@@ -100,7 +100,7 @@ class VAETrainer(Trainer):
             'val': {'loss': [], 'perplexity': []}
         }
 
-    def step(self, phase, samples, labels):
+    def step(self, epoch, phase, samples, labels):
         vq_loss, data_recon, perplexity, encoding = self.model(samples)
         recon_error = F.mse_loss(data_recon, samples) / self.data_variance
         self.metrics_step[phase]['loss'].append(recon_error.item())
@@ -133,7 +133,7 @@ class PriorTrainer(Trainer):
         self.decoder = None
         self.q = 0.
 
-    def step(self, phase, samples, labels):
+    def step(self, epoch, phase, samples, labels):
         normalized_samples = samples.float() / (self.levels - 1)
         outputs = self.model(normalized_samples, labels)
         loss = F.cross_entropy(outputs, samples.long())
@@ -159,7 +159,7 @@ class GANTrainer(Trainer):
         self.loss = None
         self.latent_dim = None
         self.phases = ['train']
-        # self.n_critic = 5
+        self.n_critic = 5
         self.lambda_gp = 10
         self.metrics = {
             'generator': {'loss': []},
@@ -170,7 +170,7 @@ class GANTrainer(Trainer):
             'discriminator': {'loss': []}
         }
 
-    def step(self, phase, samples, labels):
+    def step(self, epoch, phase, samples, labels):
         # valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
         # fake = Variable(torch.zeros((samples.size(0), 1), device=self.device), requires_grad=False)
         real_samples = Variable(samples, requires_grad=False)
@@ -188,12 +188,13 @@ class GANTrainer(Trainer):
         d_loss.backward()
         self.optimizer['discriminator'].step()
 
-        self.optimizer['generator'].zero_grad()
-        fake_samples = self.model['generator'](z)
-        # g_loss = self.loss(self.model['discriminator'](fake_samples), valid)
-        g_loss = -torch.mean(self.model['discriminator'](fake_samples))
-        g_loss.backward()
-        self.optimizer['generator'].step()
+        if epoch % self.n_critic == 0:
+            self.optimizer['generator'].zero_grad()
+            fake_samples = self.model['generator'](z)
+            # g_loss = self.loss(self.model['discriminator'](fake_samples), valid)
+            g_loss = -torch.mean(self.model['discriminator'](fake_samples))
+            g_loss.backward()
+            self.optimizer['generator'].step()
 
         self.metrics_step['discriminator']['loss'].append(d_loss.item())
         self.metrics_step['generator']['loss'].append(g_loss.item())
