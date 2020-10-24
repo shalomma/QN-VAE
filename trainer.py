@@ -55,7 +55,7 @@ class Trainer(ABC):
             self.model_checkpoint()
             self.log_epoch(e)
 
-        self.model.load_state_dict(self.best_weights)
+        self.load_weights()
 
     def set_model_phase(self, phase):
         self.model.train() if phase == 'train' else self.model.eval()
@@ -85,6 +85,9 @@ class Trainer(ABC):
         for phase in self.phases:
             for metric, values in self.metrics_step[phase].items():
                 self.metrics[phase][metric].append(np.mean(values))
+
+    def load_weights(self):
+        self.model.load_state_dict(self.best_weights)
 
 
 class VAETrainer(Trainer):
@@ -218,7 +221,10 @@ class GANTrainer(Trainer):
         save_image(fake_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
 
     def model_checkpoint(self):
-        self.best_weights = copy.deepcopy(self.model.state_dict())
+        pass
+
+    def load_weights(self):
+        pass
 
 
 class WGANGPTrainer(GANTrainer):
