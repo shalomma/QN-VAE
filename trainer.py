@@ -195,9 +195,9 @@ class GANTrainer(Trainer):
             g_loss = -torch.mean(self.model['discriminator'](fake_samples))
             g_loss.backward()
             self.optimizer['generator'].step()
+            self.metrics_step['generator']['loss'].append(g_loss.item())
 
         self.metrics_step['discriminator']['loss'].append(d_loss.item())
-        self.metrics_step['generator']['loss'].append(g_loss.item())
 
     def compute_gradient_penalty(self, real_samples, fake_samples):
         """Calculates the gradient penalty loss for WGAN GP"""
