@@ -218,7 +218,7 @@ class GANTrainer(Trainer):
         save_image(fake_samples.data, f"images/{epoch}.png", nrow=5, normalize=True)
 
     def model_checkpoint(self):
-        pass
+        self.best_weights = copy.deepcopy(self.model.state_dict())
 
 
 class WGANGPTrainer(GANTrainer):
@@ -255,7 +255,6 @@ class WGANGPTrainer(GANTrainer):
         # Get random interpolation between real and fake samples
         interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
         d_interpolates = self.model['discriminator'](interpolates)
-        # fake = Variable(torch.tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
         fake = Variable(torch.ones((real_samples.size(0), 1), device=self.device), requires_grad=False)
 
         # Get gradient w.r.t. interpolates
