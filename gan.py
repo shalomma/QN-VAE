@@ -93,7 +93,8 @@ if __name__ == '__main__':
         'epochs': args.epochs,
         'batch_size': 32,
         'learning_rate': 1e-4,
-        'latent_dim': 64
+        'latent_dim': 64,
+        'n_critic': 1
     }
 
     img_size = 28
@@ -134,6 +135,7 @@ if __name__ == '__main__':
 
     trainer = GANTrainer(model, optimizer, loaders, None)
     trainer.loss = adversarial_loss
+    trainer.n_critic = params['n_critic']
     trainer.epochs = params['epochs']
     trainer.latent_dim = params['latent_dim']
     trainer.run()

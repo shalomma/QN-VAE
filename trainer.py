@@ -159,8 +159,7 @@ class GANTrainer(Trainer):
         self.loss = None
         self.latent_dim = None
         self.phases = ['train']
-        self.n_critic = 5
-        self.lambda_gp = 10
+        self.n_critic = 1
         self.metrics = {
             'generator': {'loss': []},
             'discriminator': {'loss': []}
@@ -225,6 +224,7 @@ class GANTrainer(Trainer):
 class WGANGPTrainer(GANTrainer):
     def __init__(self, model, optimizer, loader, scheduler):
         super(WGANGPTrainer, self).__init__(model, optimizer, loader, scheduler)
+        self.lambda_gp = 10
 
     def step(self, epoch, phase, samples, labels):
         real_samples = Variable(samples, requires_grad=False)
