@@ -4,10 +4,12 @@ import argparse
 from abc import ABC
 import logging.config
 import torch.nn as nn
+from datetime import datetime
 from torchvision import transforms
 
 import loader
 import trainer as trn
+from utils import save_model
 
 
 def weights_init_normal(m):
@@ -139,3 +141,10 @@ if __name__ == '__main__':
     trainer.epochs = params['epochs']
     trainer.latent_dim = params['latent_dim']
     trainer.run()
+
+    timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
+    save_dir = f'{load_dir}/{timestamp}'
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_model(model['generator'], params, 'generator', 'mnist', save_dir)
+    save_model(model['discriminator'], params, 'discriminator', 'mnist', save_dir)
