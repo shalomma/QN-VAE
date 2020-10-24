@@ -143,3 +143,4 @@ if __name__ == '__main__':
     trainer.run()
     save_model(model['generator'], params, 'generator', 'mnist', save_dir)
     save_model(model['discriminator'], params, 'discriminator', 'mnist', save_dir)
+    log.info(f'Done. saved dir: {save_dir}')
