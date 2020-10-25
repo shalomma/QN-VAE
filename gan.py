@@ -146,6 +146,6 @@ if __name__ == '__main__':
     trainer.epochs = params['epochs']
     trainer.latent_dim = params['latent_dim']
     trainer.run()
-    save_model(model['generator'], params, 'generator', 'mnist', save_dir)
-    save_model(model['discriminator'], params, 'discriminator', 'mnist', save_dir)
+    save_model(model['generator'], params, 'generator', args.q, save_dir)
+    save_model(model['discriminator'], params, 'discriminator', args.q, save_dir)
     log.info(f'Done. saved dir: {save_dir}')
