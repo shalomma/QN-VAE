@@ -9,7 +9,8 @@ from torchvision import transforms
 
 import loader
 import trainer as trn
-from utils import save_model
+from qnvae import QNVAE
+from utils import save_model, load_model
 
 
 def weights_init_normal(m):
@@ -67,7 +68,7 @@ class Discriminator(nn.Module, ABC):
         )
 
         # The height and width of down sampled image
-        ds_size = 2  # in_size // 2 ** 4
+        ds_size = 1  # in_size // 2 ** 4
         self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
 
     def forward(self, img):
@@ -80,13 +81,15 @@ class Discriminator(nn.Module, ABC):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('timestamp', type=str, help='models timestamp')
+    parser.add_argument('-q', type=float, help='epochs', default=1.0)
     parser.add_argument('--epochs', type=int, help='epochs', default=100)
     args = parser.parse_args()
 
     timestamp = str(datetime.now())[:-7].replace('-', '_').replace(' ', '_').replace(':', '_')
-    save_dir = f'./models/{timestamp}'
+    load_dir = f'./models/{args.timestamp}'
+    save_dir = f'{load_dir}/{timestamp}'
     os.makedirs(save_dir, exist_ok=True)
-    os.makedirs("images", exist_ok=True)
 
     logging.config.fileConfig('logging.ini', defaults={'logfile': f'{save_dir}/training_prior.log'},
                               disable_existing_loggers=False)
@@ -96,10 +99,10 @@ if __name__ == '__main__':
         'epochs': args.epochs,
         'batch_size': 32,
         'learning_rate': 1e-4,
-        'latent_dim': 64,
+        'latent_dim': 16,
         'n_critic': 1,
         'channels': 1,
-        'in_size': 28
+        'in_size': 7
     }
 
     # Loss function
@@ -130,10 +133,12 @@ if __name__ == '__main__':
         'discriminator': torch.optim.Adam(discriminator.parameters(), lr=params['learning_rate'])
     }
 
-    # loaders = loader.EncodedLoader(load_dir, q=0.8).get(params['batch_size'], pin_memory=False)
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize(mean=(0.5,), std=(1.0,))])
-    loaders = loader.MNISTLoader(transform).get(params['batch_size'])
+    _, params_qnvae = load_model(QNVAE, 'qnvae', q=args.q, directory=load_dir)
+    transform = transforms.Lambda(lambda sample: sample.type(torch.float32) / (params_qnvae['num_embeddings'] - 1))
+    loaders = loader.EncodedLoader(load_dir, q=args.q, transform=transform).get(params['batch_size'], pin_memory=False)
+    # transform = transforms.Compose([transforms.ToTensor(),
+    #                                 transforms.Normalize(mean=(0.5,), std=(1.0,))])
+    # loaders = loader.MNISTLoader(transform).get(params['batch_size'])
 
     trainer = trn.GANTrainer(model, optimizer, loaders, None)
     trainer.loss = adversarial_loss
