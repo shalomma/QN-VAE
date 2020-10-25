@@ -1,14 +1,15 @@
-import logging
-from abc import ABC, abstractmethod
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-from torch.backends import cudnn
-from utils import save_samples
-from torchvision.utils import save_image
+import os
 import copy
+import torch
+import logging
+import numpy as np
+import torch.nn as nn
+from utils import save_samples
+import torch.nn.functional as F
+from torch.backends import cudnn
+from torch.autograd import Variable
+from abc import ABC, abstractmethod
+from torchvision.utils import save_image
 
 
 cudnn.deterministic = True
@@ -170,6 +171,7 @@ class GANTrainer(Trainer):
             'generator': {'loss': []},
             'discriminator': {'loss': []}
         }
+        os.makedirs("images", exist_ok=True)
 
     def step(self, epoch, phase, samples, labels):
         valid = Variable(torch.ones((samples.size(0), 1), device=self.device), requires_grad=False)
